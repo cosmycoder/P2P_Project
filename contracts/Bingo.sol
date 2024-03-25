@@ -1,34 +1,58 @@
 pragma solidity ^0.8.0;
 
 contract Bingo {
-    address public creator;
-    address[] public joiners;
-    uint public maxJoiners;
-    uint public totalJoiners;
-    uint public ethBalance;
-    uint public betAmount;
-    bytes32 public creatorMerkleRoot;
-    mapping(address => bytes32) public joinerMerkleRoots;
-    uint public accusationTime;
-    address public accuser;
+    struct info {
+        address creator;
+        address[] joiners;
+        uint maxJoiners;
+        uint totalJoiners;
+        uint ethBalance;
+        uint betAmount;
+        bytes32 creatorMerkleRoot;
+        mapping(address => bytes32) joinerMerkleRoots;
+        uint accusationTime;
+        address accuser;
+    }
+    uint256 public gameId = 0; // Game ID counter
+    mapping(uint256 => info) public gameList; // Mapping of game ID to game info
+    uint256[] public availableGames;    // List of available game IDs
 
-    constructor(uint _maxJoiners, uint _betAmount, bytes32 _creatorMerkleRoot, uint _accusationTime) {
-        creator = msg.sender;
-        maxJoiners = _maxJoiners;
-        betAmount = _betAmount;
-        creatorMerkleRoot = _creatorMerkleRoot;
-        accusationTime = _accusationTime;
+    event GameCreated(uint256 indexed _gameId); //  Event to log game creation
+
+    
+    constructor() {
+        // Add constructor code
     }
 
-    function join() external payable {
-        require(joiners.length < maxJoiners, "Maximum number of joiners reached");
-        require(msg.value == betAmount, "Incorrect bet amount");
+    function createGame(uint _maxJoiners, uint _betAmount, bytes32 _creatorMerkleRoot)  public payable {
+        require(_maxJoiners > 0, "Max joiners must be greater than 0");
+        require(_betAmount > 0, "Bet amount must be greater than 0");
+        require(_creatorMerkleRoot != bytes32(0), "Invalid creator merkle root");
+
+    
+        uint256[] memory gameID = getIDGame();
+        gameList[gameID] = info({
+            creator: msg.sender,
+            joiners: new address[](0),
+            maxJoiners: _maxJoiners,
+            totalJoiners: 0,
+            ethBalance: 0,
+            betAmount: _betAmount,
+            creatorMerkleRoot: _creatorMerkleRoot,
+            accusationTime: 0,
+            accuser: address(0)
+        });
+        availableGames.push(gameID);
+        gameList[gameID].ethBalance += msg.value;
+        emit GameCreated(gameID);
+    }
+    
+
+    function getIDGame() private returns(uint256[] memory) {
+        return ++gameId;
+    }
+    function join(uint256 _gameId) external{
         
-        joiners.push(msg.sender);
-        joinerMerkleRoots[msg.sender] = bytes32(0); // Placeholder value for joiner's merkle root
-        
-        totalJoiners++;
-        ethBalance += msg.value;
     }
 
     // Add other functions as needed
