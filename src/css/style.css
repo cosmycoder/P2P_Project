@@ -1,91 +1,116 @@
-/* Reset CSS */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-  }
-  
-  body {
-    font-family: 'Roboto', sans-serif;
-    background-color: #2c3e50;
-    color: #fff;
-  }
-  
-  .container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
-  }
-  
-  .header {
-    background-color: #27ae60;
-    padding: 40px 0;
-    text-align: center;
-  }
-  
-  .header__title {
-    font-size: 36px;
-    margin-bottom: 10px;
-  }
-  
-  .header__subtitle {
-    font-size: 18px;
-  }
-  
-  .options {
-    padding: 40px 0;
-  }
-  
-  .options__wrapper {
-    display: flex;
-    justify-content: space-between;
-  }
-  
-  .options__title {
-    font-size: 24px;
-    margin-bottom: 20px;
-  }
-  
-  .options__create,
-  .options__join {
-    flex: 0 0 48%;
-  }
-  
-  .options__button {
-    background-color: #27ae60;
-    color: #fff;
-    border: none;
-    border-radius: 5px;
-    padding: 10px 20px;
-    font-size: 16px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-  }
-  
-  .options__button:hover {
-    background-color: #218c54;
-  }
-  
-  .footer {
-    background-color: #34495e;
-    padding: 20px 0;
-    text-align: center;
-  }
-  
-  .footer__copyright {
-    font-size: 14px;
-  }
-  /* Footer Styles */
-.footer {
-    background-color: #34495e;
-    padding: 20px 0;
-    text-align: center;
-    position: fixed;
-    bottom: 0;
-    width: 100%;
-  }
-  .options__buttons {
-    display: flex;
-    justify-content: space-between;
-  }
-    
+
+body {
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  background-color: #f0f2f5; /* Cambiato il colore di sfondo */
+}
+
+*,
+*::before,
+*::after {
+  font-family: 'Montserrat', sans-serif;
+  box-sizing: border-box;
+}
+
+.container {
+  display: flex;
+  justify-content: flex-start;
+  flex-direction: row;
+  width: 100%;
+}
+
+h1 {
+  color: #2c3e50; /* Cambiato il colore del titolo */
+  font-size: 4rem;
+}
+
+.set-up {
+  box-sizing: border-box;
+  margin: 50px; /* Ridotto il margine per rendere il design più compatto */
+}
+
+.form-type-number {
+  position: relative;
+  height: 50px;
+}
+
+input {
+  color: #2c3e50; /* Cambiato il colore del testo degli input */
+  appearance: none;
+  position: absolute;
+  top: 0;
+  left: 50%; /* Centrato l'input */
+  transform: translateX(-50%);
+  display: block;
+  width: 60%; /* Aumentata la larghezza per una migliore usabilità */
+  height: 50px;
+  text-align: center;
+  font-size: 1.1em;
+  font-weight: 500;
+  background-color: #ecf0f1; /* Cambiato il colore di sfondo */
+  border-radius: 25px; /* Ridotto il raggio per un aspetto più moderno */
+  border: none;
+  outline: none; /* Rimossa la cornice attorno all'input */
+  transition: background-color 0.2s ease; /* Aggiunta transizione */
+}
+
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button { 
+  -webkit-appearance: none;
+}
+
+input:focus {
+  background-color: #d5dbdf; /* Cambiato il colore di sfondo al focus */
+}
+
+.form-start {
+  color: #ffffff; /* Cambiato il colore del testo */
+  text-align: center;
+  font-size: 1.3em;
+  font-weight: 600;
+  background-color: #3498db; /* Cambiato il colore di sfondo */
+  border-radius: 30px; /* Ridotto il raggio per un aspetto più moderno */
+  padding: 14px 20px;
+  margin: 20px 0; /* Aumentato il margine per separare gli elementi */
+  cursor: pointer;
+  transition: background-color 0.2s ease; /* Aggiunta transizione al cambio di colore */
+}
+
+.form-start:hover {
+  background-color: #2980b9; /* Cambiato il colore al passaggio del mouse */
+}
+
+.btn-start {
+  color: #ffffff; /* Cambiato il colore del testo */
+  text-align: center;
+  font-size: 1.3em;
+  font-weight: 600;
+  background-color: #e74c3c; /* Cambiato il colore di sfondo */
+  border-radius: 30px; /* Ridotto il raggio per un aspetto più moderno */
+  padding: 14px 20px;
+  margin: 20px 0; /* Aumentato il margine per separare gli elementi */
+  cursor: pointer;
+  transition: background-color 0.2s ease; /* Aggiunta transizione al cambio di colore */
+}
+
+.btn-start:hover {
+  background-color: #c0392b; /* Cambiato il colore al passaggio del mouse */
+}
+
+.loader {
+  border: 4px solid #f3f3f3; /* Bianco */
+  border-top: 4px solid #3498db; /* Colore primario */
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  animation: spin 1s linear infinite; /* Aggiunta animazione di rotazione */
+  margin: 20px auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
