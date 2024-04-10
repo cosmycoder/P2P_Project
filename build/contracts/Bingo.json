@@ -36,7 +36,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [],
@@ -49,7 +50,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [
@@ -108,7 +110,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [
@@ -126,7 +129,8 @@
       "name": "createGame",
       "outputs": [],
       "stateMutability": "payable",
-      "type": "function"
+      "type": "function",
+      "payable": true
     },
     {
       "inputs": [
@@ -5929,9 +5933,17 @@
     "name": "solc",
     "version": "0.8.25+commit.b61c2a91.Emscripten.clang"
   },
-  "networks": {},
+  "networks": {
+    "1712402280589": {
+      "events": {},
+      "links": {},
+      "address": "0x00b7Df426914572CC6400b1d0d67C69675994CC9",
+      "transactionHash": "0x31395fa9a94f59f3212e5d3f67e07e9c64eb63a4d5f6292203818627f3748ee4"
+    }
+  },
   "schemaVersion": "3.4.16",
-  "updatedAt": "2024-04-03T10:05:47.913Z",
+  "updatedAt": "2024-04-06T11:19:14.287Z",
+  "networkType": "ethereum",
   "devdoc": {
     "kind": "dev",
     "methods": {},

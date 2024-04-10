@@ -2,6 +2,10 @@ App = {
   web3Provider: null,
   contracts: {},
 
+  init: async function () {
+    return await App.initWeb3();
+  },
+
   initWeb3: async function() {
     // Modern dapp browsers...
     if (window.ethereum) {
@@ -26,10 +30,13 @@ App = {
     return App.initContract();
   },
 
+
+  
   initContract: function() {
     $.getJSON('Bingo.json', function(data) {
       // Get the necessary contract artifact file and instantiate it with @truffle/contract
       var BingoArtifact = data;
+      console.log(BingoArtifact);
       App.contracts.Bingo = TruffleContract(BingoArtifact);
     
       // Set the provider for our contract
@@ -39,11 +46,99 @@ App = {
   },
 
   bindEvents: function() {
-    //$(document).on('click', '.btn-adopt', App.handleAdopt);
+    console.log("Binding events...");
+
+
+
+    console.log($('#newGame'));
     $(document).on('click', '#createNewGameBtn', App.handleCreateRoom);
+    $(document).on('click', '#backToMenuBtn', App.backToMainMenu);
+    $(document).on('click', '#createGameBtn', App.createGame);
+    $(document).on('click', '#joinRandomGameBtn', App.joinRandomGame);
+    $(document).on('click', '#joinGameBtn', App.joinedSpecific);
+    $(document).on('click', '#acceptAmountBtn', App.acceptEthAmount);
+    // button to refuse the Ethereum amount
+    $(document).on('click', '#refuseAmountBtn', App.refuseEthAmount);
+
+},
+showAcceptEthAmount: function() {
+  $('#joinSpecificGame').hide();
+  $('#initialsection').hide();
+  
+  var acceptAmountText = document.getElementById('acceptAmountText');
+  acceptAmountText.innerHTML = "<h2>Do you want to start the game with id " + gameId +
+    "<h2>The amount of ETH to bet is " + ethAmmount + " ETH.</h2>";
+  $('#acceptAmount').show();
+},
+
+acceptEthAmount: function() {
+  App.contracts.Bingo.deployed().then(async function(instance) {
+    const newInstance = instance;
+    return newInstance.amountEthDecision(gameId, true, { value: (ethAmount * 1000000000000000000) });
+  }).then(async function(logArray) {
+    App.handleEvents();
+  }).catch(function(err) {
+    console.log(err.message);
+  });
+},
+refuseEthAmount: function() {
+  App.contracts.Bingo.deployed().then(async function(instance) {
+    const newInstance = instance;
+    return newInstance.amountEthDecision(gameId, false, { value: 0 });//TODO check if the value is needed
+  }).then(async function(logArray) {
+    App.handleEvents();
+  }).catch(function(err) {
+    console.log(err.message);
+  });
+},
 
 
+  joinRandomGame: function () {
+   App.joinedGame (true);
   },
+
+
+  joinedSpecific: function () {
+    $('#joinSpecificGame').show();
+    $("#initialsection").hide();
+    $(document).on('click', '#joinGameIdBtn', App.joinedGame(false));
+  },
+
+  joinedGame: function (randomized) {
+    let chosenGame;
+    if (randomized === true) {
+      chosenGame = 0;
+      $('#setUpNewGame').hide();
+    } else {
+      chosenGame = $('#selectedGameId').val();
+    }
+  
+    App.contracts.BattleShipGame.deployed().then(async function (instance) {
+      const newInstance = instance;
+      return newInstance.joinGame(chosenGame);
+    }).then(async function (logs) {
+      const gameId = logs.logs[0].args._gameId.toNumber();
+      const ethAmount = logs.logs[0].args._ethAmount.toNumber();
+      const boardSize = logs.logs[0].args._boardSize.toNumber();
+      const shipNumber = logs.logs[0].args._shipNum.toNumber();
+  
+      const myBoardMatrix = [];
+      const opponentBoardMatrix = [];
+      for (let i = 0; i < boardSize; i++) {
+        myBoardMatrix[i] = [];
+        opponentBoardMatrix[i] = [];
+        for (let j = 0; j < boardSize; j++) {
+          myBoardMatrix[i][j] = 0;
+          opponentBoardMatrix[i][j] = 0;
+        }
+      }
+  
+      App.showAcceptEthAmount();
+    }).catch(function (error) {
+      console.log(error.message);
+    });
+  },
+  
 
   markAdopted: function() {
     var adoptionInstance;
@@ -88,10 +183,9 @@ App = {
 
   },
   
-  gameCreation: function () {
+  createGame: function () {
     boardSize = 5; // Bingo board size
     iHostTheGame = true;
-  
     // Call to the contract
     App.contracts.Bingo.deployed().then(async function (instance) {
       newInstance = instance;
@@ -125,9 +219,20 @@ App = {
       console.log(err.message);
     });
   },
-  handleCreateRoom: function () { // function to show the create game menu
-    $('#newGame').show();
-    $('#initialsection').hide();
+  handleCreateRoom: function (event) { // function to show the create game menu
+    $("#newGame").show();
+    $("#initialsection").hide();
+  },
+  backToMainMenu: function (event) { // function for back to the menu
+    // show the main menu:
+    console.log("back to menu");
+    $('#initialsection').show();
+    // hide all the remaining parts:
+    $('#newGame').hide();
+    $('#joinSpecificGame').hide();
+    $('#waitingOpponent').hide();
+    $('#acceptAmount').hide();
+    $('#gameBoard').hide();
   }
 };
 function loader()

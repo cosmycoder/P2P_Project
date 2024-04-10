@@ -8,17 +8,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
 
-  <title>Bingo Ethereum</title>
-
-  <!-- Bootstrap -->
+  <title>Bingo</title>
   <link href="css/style.css" rel="stylesheet">
-
-  <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
-  <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
-  <!--[if lt IE 9]>
-      <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
-      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-    <![endif]-->
 </head>
 
 <body>
@@ -26,7 +17,7 @@
   <div class="container">
     <div class="row">
       <div class="col-xs-12 col-sm-8 col-sm-push-2">
-        <h1 class="text-center">Bingo Ethereum Game</h1>
+        <h1 class="text-center">Bingo Ethereum</h1>
         <hr />
         <br />
       </div>
@@ -38,19 +29,19 @@
     <!-- First button: start creation of a new game -->
     <div class="col">
       <div id="createNewGameBtn" class="btn-start">
-        <h2>Click here to create a new game</h2>
+        <h2>Clicca qui per creare una nuova stanza</h2>
       </div>
     </div>
     <!-- Second button: join a random game -->
     <div class="col" style="margin-top: 2%;">
       <div id="joinRandomGameBtn" class="btn-start">
-        <h2>Click here to join a random game</h2>
+        <h2>clicca qui per unirti ad una stanza casuale</h2>
       </div>
     </div>
     <!-- Third button: join a specific game -->
     <div class="col" style="margin-top: 2%;">
       <div id="joinGameBtn" class="btn-start">
-        <h2>Click here to join a specific game</h2>
+        <h2>Clicca qui per unirti ad una stanza specidica con il codice</h2>
       </div>
     </div>
   </div>
@@ -58,27 +49,27 @@
   <!-- Menu for insert the Id of the game to join -->
   <div id="joinSpecificGame" hidden class="form-start">
     <div id="selectedGameIdDiv">
-      <h2>Insert the game id or leave the input box clear to join a random game!</h2>
+      <h2>Inserisci il codice per unirti alla stanza specifica,lascia vuoto per unirti ad una casuale</h2>
       <input class="form-type-number" type="number" id="selectedGameId" min="0" placeholder="Insert here the game Id">
     </div>
-    <button id="backToMenuBtn" type="button" class="btn btn-primary btn-lg">Back to the main menu</button>
-    <button id="joinGameIdBtn" type="button" class="btn btn-primary btn-lg">Join the game</button>
+    <button id="backToMenuBtn" type="button" class="btn btn-primary btn-lg">Ritorna al menu principale</button>
+    <button id="joinGameIdBtn" type="button" class="btn btn-primary btn-lg">Unisciti</button>
   </div>
 
   <!-- Menu for set the dimension of the board, the number of players and the amount of Ethereum -->
   <div class="form-start" id="newGame" hidden>
     <div id="playerdiv">
-      <h2>Choose the number of players:</h2>
+      <h2>Scegli il numero di giocatori:</h2>
       <input required class="form-type-number" type="number" id="playerNum" value="2" min="2">
     </div>
     <div id="ethAmmountDiv">
-      <h2>Choose the ammount of ETH you want to bet in this game:</h2>
+      <h2>scegli l'ammontare di ETH che vuoi scommettere:</h2>
       <input required class="form-type-number" type="number" id="ethAmmount" value="2">
     </div>
 
     <div id="set-upButton">
-      <button id="backToMenuBtn" type="button" class="btn btn-primary btn-lg">Back to the main menu</button>
-      <button id="createGameBtn" type="button" class="btn btn-primary btn-lg">Create a new game!</button>
+      <button id="backToMenuBtn" type="button" class="btn btn-primary btn-lg">Ritorna al menu principale</button>
+      <button id="createGameBtn" type="button" class="btn btn-primary btn-lg">Crea la stanza</button>
     </div>
   </div>
 
@@ -86,7 +77,7 @@
   <div id="waitingOpponent" hidden class="form-start">
     <div>
       <div class = "loader" id="waitingOpponentConnection">
-        <h2 id="waitingOpponentTitle"> Welcome to Bingo Game Ethereum!</h2>
+        <h2 id="waitingOpponentTitle"> Benvenuto! attendi che si connettano anche gli altri giocatori</h2>
         <h2>Loading..</h2>
       </div>
     </div>
@@ -97,8 +88,8 @@
     <div id="acceptAmountText">
       <h2> Loading... </h2>
     </div>
-    <button id="refuseAmountBtn" type="button" class="btn btn-primary btn-lg">Quit this game</button>
-    <button id="acceptAmountBtn" type="button" class="btn btn-primary btn-lg">Accept the Ethereum amount!</button>
+    <button id="refuseAmountBtn" type="button" class="btn btn-primary btn-lg">Esci dal gioco</button>
+    <button id="acceptAmountBtn" type="button" class="btn btn-primary btn-lg">Accetta la quantita di Eth</button>
   </div>
 
  
