@@ -16,8 +16,19 @@ contract Bingo {
     mapping(uint256 => info) public gameList; // Mapping of game ID to game info
     uint256[] public availableGames;    // List of available game IDs
 
+    error OutputError(string myError); // event: error output
     event GameCreated(uint256 indexed _gameId); //  Event to log game creation
-
+    
+    
+    //TODO: implementa piu persone
+    event GameJoined(
+        uint256 indexed _gameId,
+        address _creator,
+        address _joiner, 
+        uint256 _maxjoiners,
+        uint256 _totalJoiners,
+        uint256 _ethAmount
+    );
     
     constructor() {
         // Add constructor code

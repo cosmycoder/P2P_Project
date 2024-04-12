@@ -1,3 +1,7 @@
+
+var gameId = null;
+var ethAmmount = null;
+var boardSize = 5;
 App = {
   web3Provider: null,
   contracts: {},
@@ -84,7 +88,7 @@ acceptEthAmount: function() {
 refuseEthAmount: function() {
   App.contracts.Bingo.deployed().then(async function(instance) {
     const newInstance = instance;
-    return newInstance.amountEthDecision(gameId, false, { value: 0 });//TODO check if the value is needed
+    return newInstance.amountEthDecision(gameId, false);//TODO check if the value is needed
   }).then(async function(logArray) {
     App.handleEvents();
   }).catch(function(err) {
@@ -113,14 +117,13 @@ refuseEthAmount: function() {
       chosenGame = $('#selectedGameId').val();
     }
   
-    App.contracts.BattleShipGame.deployed().then(async function (instance) {
+    App.contracts.Bingo.deployed().then(async function (instance) {
       const newInstance = instance;
       return newInstance.joinGame(chosenGame);
     }).then(async function (logs) {
       const gameId = logs.logs[0].args._gameId.toNumber();
       const ethAmount = logs.logs[0].args._ethAmount.toNumber();
-      const boardSize = logs.logs[0].args._boardSize.toNumber();
-      const shipNumber = logs.logs[0].args._shipNum.toNumber();
+      
   
       const myBoardMatrix = [];
       const opponentBoardMatrix = [];
@@ -184,7 +187,7 @@ refuseEthAmount: function() {
   },
   
   createGame: function () {
-    boardSize = 5; // Bingo board size
+    ethAmmount = $('#ethAmmount').val();
     iHostTheGame = true;
     // Call to the contract
     App.contracts.Bingo.deployed().then(async function (instance) {
@@ -233,7 +236,81 @@ refuseEthAmount: function() {
     $('#waitingOpponent').hide();
     $('#acceptAmount').hide();
     $('#gameBoard').hide();
-  }
+  },
+  createBoardTable: function () {
+    // Function to create a board for the placement phase
+    // Get the div "gameBoard" and add the template size
+    const board = document.getElementById('gameBoard');
+    board.style = "grid-template-columns: 40px repeat(" + boardSize + ", 1fr);grid-template-rows: 40px repeat(" + boardSize + ", 1fr);"
+  
+    // Creation of the header column:
+    for (let j = 0; j <= boardSize; j++) {
+      const headerCell = document.createElement("div");
+      headerCell.classList.add("header-cell");
+      if (j > 0) {
+        headerCell.textContent = String.fromCharCode(64 + j);
+      }
+      board.appendChild(headerCell);
+    }
+  
+    for (let i = 0; i < boardSize; i++) {
+      // Creation of the header row
+      const headerCell = document.createElement("div");
+      headerCell.classList.add("header-cell");
+      headerCell.textContent = i + 1;
+  
+      board.appendChild(headerCell);
+  
+      // Creation of the board with placing button and dropdown menu
+      for (let j = 0; j < boardSize; j++) {
+        const cell = document.createElement("div");
+        cell.classList.add("my-cell");
+        cell.dataset.row = i;
+        cell.dataset.col = j;
+  
+        // Create dropdown menu
+        const dropdown = document.createElement("select");
+        dropdown.addEventListener("change", (event) => {
+          const selectedNumber = parseInt(event.target.value);
+          if (!isNaN(selectedNumber)) {
+            // Check if selected number is not already selected in other cells
+            const selectedNumbers = Array.from(document.querySelectorAll(".my-cell select"))
+              .map(select => parseInt(select.value))
+              .filter(value => !isNaN(value));
+            if (!selectedNumbers.includes(selectedNumber)) {
+              // Set selected number to cell's dataset
+              cell.dataset.value = selectedNumber;
+            } else {
+              // Reset dropdown if number is already selected
+              dropdown.value = "";
+              alert("Number already selected in another cell.");
+            }
+          }
+        });
+  
+        // Add options to dropdown
+        for (let number = 1; number <= 99; number++) {
+          const option = document.createElement("option");
+          option.value = number;
+          option.textContent = number;
+          dropdown.appendChild(option);
+        }
+  
+        cell.appendChild(dropdown);
+        board.appendChild(cell);
+      }
+    }
+  },
+
+
+
+
+
+
+
+
+  
+
 };
 function loader()
 {

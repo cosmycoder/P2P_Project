@@ -59,12 +59,12 @@
   <!-- Menu for set the dimension of the board, the number of players and the amount of Ethereum -->
   <div class="form-start" id="newGame" hidden>
     <div id="playerdiv">
-      <h2>Scegli il numero di giocatori:</h2>
+      <h2>Scegli il numero massimo di giocatori:</h2>
       <input required class="form-type-number" type="number" id="playerNum" value="2" min="2">
     </div>
     <div id="ethAmmountDiv">
       <h2>scegli l'ammontare di ETH che vuoi scommettere:</h2>
-      <input required class="form-type-number" type="number" id="ethAmmount" value="2">
+      <input required class="form-type-number" type="number" id="ethAmmount" value="1">
     </div>
 
     <div id="set-upButton">
@@ -92,6 +92,31 @@
     <button id="acceptAmountBtn" type="button" class="btn btn-primary btn-lg">Accetta la quantita di Eth</button>
   </div>
 
+
+
+  <div id="gameFase" hidden>
+    <div class="form-start">
+      <h2 id="messageInfo">Seleziona i numeri nella tua cartella!</h2>
+    </div>
+    <div class="parent"></div>
+      <div class="child"> <!-- Game board - positioning fase -->
+        <div class="form-board">
+          <h3>La tua cartella</h3>
+        </div>
+        <div id="gameBoard" class="game-board"></div>
+      </div>
+
+    
+    <div id="submitBtn" class="form-start">
+      <h2 id="submitInfo">Place the ships!</h2>
+    </div>
+    <div id="accusationBtn" class="form-start" hidden>
+      <h2 id="accusationInfo">Accuse the opponent to have left the game!</h2>
+    </div>
+    <div id="endBtn" class="form-start" hidden>
+      <h2 id="endInfo">Click here to back to the menu!</h2>
+    </div>
+  </div>
  
 
   <!-- SCRIPT -->
