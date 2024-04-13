@@ -142,50 +142,6 @@ refuseEthAmount: function() {
     });
   },
   
-
-  markAdopted: function() {
-    var adoptionInstance;
-
-    App.contracts.Adoption.deployed().then(function(instance) {
-      adoptionInstance = instance;
-    
-      return adoptionInstance.getAdopters.call();
-    }).then(function(adopters) {
-      for (i = 0; i < adopters.length; i++) {
-        if (adopters[i] !== '0x0000000000000000000000000000000000000000') {
-          $('.panel-pet').eq(i).find('button').text('Success').attr('disabled', true);
-        }
-      }
-    }).catch(function(err) {
-      console.log(err.message);
-    });
-    
-  },
-
-  handleAdopt: function(event) {
-    event.preventDefault();
-    var petId = parseInt($(event.target).data('id'));
-    var adoptionInstance;
-
-    web3.eth.getAccounts(function(error, accounts) {
-      if (error) {
-      console.log(error);
-      }
-      var account = accounts[0];
-      App.contracts.Adoption.deployed().then(function(instance) {
-        adoptionInstance = instance;
-
-        // Execute adopt as a transaction by sending account
-        return adoptionInstance.adopt(petId, {from: account});
-      }).then(function(result) {
-        return App.markAdopted();
-        }).catch(function(err) {
-        console.log(err.message);
-        });
-    });
-
-  },
-  
   createGame: function () {
     ethAmmount = $('#ethAmmount').val();
     iHostTheGame = true;
@@ -301,7 +257,84 @@ refuseEthAmount: function() {
       }
     }
   },
+  handleEvents: function() {
+    App.contracts.Bingo.deployed().then(async function(instance) {
+      const newInstance = instance;
+      // Event listener for gameCreated event
+      newInstance.gameCreated({}, { fromBlock: 'latest' }).watch(function(error, event) {
+        if (!error) {
+          const gameId = event.args._gameId.toNumber();
+          const ethAmount = event.args._ethAmount.toNumber();
+          console.log("Game created with ID: " + gameId + ", ETH amount: " + ethAmount);
+          // TODO: Handle the gameCreated event
+        } else {
+          console.error(error);
+        }
+      });
 
+      // Event listener for gameJoined event
+      newInstance.gameJoined({}, { fromBlock: 'latest' }).watch(function(error, event) {
+        if (!error) {
+          const gameId = event.args._gameId.toNumber();
+          const player = event.args._player;
+          console.log("Player " + player + " joined game with ID: " + gameId);
+          // TODO: Handle the gameJoined event
+        } else {
+          console.error(error);
+        }
+      });
+
+      // Event listener for amountEthDecision event
+      newInstance.amountEthDecision({}, { fromBlock: 'latest' }).watch(function(error, event) {
+        if (!error) {
+          const gameId = event.args._gameId.toNumber();
+          const player = event.args._player;
+          const accepted = event.args._accepted;
+          console.log("Player " + player + " made an ETH amount decision for game with ID: " + gameId + ", Accepted: " + accepted);
+          // TODO: Handle the amountEthDecision event
+        } else {
+          console.error(error);
+        }
+      });
+
+      // Event listener for gameStarted event
+      newInstance.gameStarted({}, { fromBlock: 'latest' }).watch(function(error, event) {
+        if (!error) {
+          const gameId = event.args._gameId.toNumber();
+          console.log("Game with ID: " + gameId + " started");
+          // TODO: Handle the gameStarted event
+        } else {
+          console.error(error);
+        }
+      });
+
+      // Event listener for numberCalled event
+      newInstance.numberCalled({}, { fromBlock: 'latest' }).watch(function(error, event) {
+        if (!error) {
+          const gameId = event.args._gameId.toNumber();
+          const number = event.args._number.toNumber();
+          console.log("Number " + number + " called for game with ID: " + gameId);
+          // TODO: Handle the numberCalled event
+        } else {
+          console.error(error);
+        }
+      });
+
+      // Event listener for gameEnded event
+      newInstance.gameEnded({}, { fromBlock: 'latest' }).watch(function(error, event) {
+        if (!error) {
+          const gameId = event.args._gameId.toNumber();
+          const winner = event.args._winner;
+          console.log("Game with ID: " + gameId + " ended, Winner: " + winner);
+          // TODO: Handle the gameEnded event
+        } else {
+          console.error(error);
+        }
+      });
+    }).catch(function(err) {
+      console.log(err.message);
+    });
+  },
 
 
 
