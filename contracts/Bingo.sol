@@ -33,8 +33,27 @@ contract Bingo {
     event GameStarted(
         uint256 indexed _gameId,
             
-        
     );
+    //TODO: AGGIUNGI DIVERSI LOSERS
+    event GameEnded(
+        uint256 indexed _gameId,
+        address _winner,
+        address _loser,
+        uint256 _reason
+        );
+
+    event ResolveAccuse(
+        uint256 indexed _gameId,
+        address _accuser
+    );
+
+    event AmountEthResponse(
+        address _sender,
+        uint256 _amount,
+        uint256 indexed _gameId,
+        uint256 _response
+    );
+
     event GameEnded(uint256 indexed _gameId, address _winner);
     event GameCancelled(uint256 indexed _gameId);
 
