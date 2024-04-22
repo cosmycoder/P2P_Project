@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT 
 pragma solidity ^0.8.19;
 contract Bingo {
     struct info {
@@ -29,7 +30,15 @@ contract Bingo {
         uint256 _totalJoiners,
         uint256 _ethAmount
     );
-    
+    event GameStarted(
+        uint256 indexed _gameId,
+            
+        
+    );
+    event GameEnded(uint256 indexed _gameId, address _winner);
+    event GameCancelled(uint256 indexed _gameId);
+
+
     constructor() {
         // Add constructor code
     }
