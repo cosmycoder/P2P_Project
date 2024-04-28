@@ -2,16 +2,16 @@
 pragma solidity ^0.8.19;
 contract Bingo {
     struct info {
-    address creator;
-    address[] joiners;
-    uint maxJoiners;
-    uint totalJoiners;
-    uint ethBalance;
-    uint betAmount;
-    bytes32 creatorMerkleRoot;
-    bytes32 joinerMerkleRoots; //TODO: implementa piu persone
-    uint accusationTime;
-    address accuser;
+        address creator;
+        address[] joiners;
+        uint maxJoiners;
+        uint totalJoiners;
+        uint ethBalance;
+        uint betAmount;
+        bytes32 creatorMerkleRoot;
+        bytes32 joinerMerkleRoots; //TODO: implementa piu persone
+        uint accusationTime;
+        address accuser;
     }
     uint256 public gameId = 0; // Game ID counter
     mapping(uint256 => info) public gameList; // Mapping of game ID to game info
@@ -91,20 +91,85 @@ contract Bingo {
     function getIDGame() private returns(uint256 ) {
         return ++gameId;
     }
-    function join(uint256 _gameId) external{
-        
+    function joinGame(uint256 _gameId) public {
+        require(elencoGiochiDisponibili.length > 0, "No available games!");
+        uint256 chosenGameId;
+        if (_gameId == 0) {
+            chosenGameId = randomGame();
+        } else {
+            chosenGameId = _gameId;
+            require(removeFromArray(chosenGameId), "This game does not exist!");
+        }
+
+        require(chosenGameId > 0, "Chosen id negative!");
+        require(gameList[chosenGameId].totalJoiners < gameList[chosenGameId].maxJoiners, "Game already taken!");
+        require(gameList[chosenGameId].creator != msg.sender, "You can't join a game created by yourself!");
+
+        gameList[chosenGameId].joiners.push(msg.sender);
+        gameList[chosenGameId].totalJoiners++;
+        emit GameJoined( 
+            chosenGameId,
+            gameList[chosenGameId].creator,
+            msg.sender,
+            gameList[chosenGameId].maxJoiners,
+            gameList[chosenGameId].totalJoiners,
+            gameList[chosenGameId].ethBalance
+        );
     }
+
+    function amountEthDecision(uint256 _gameId, bool _response) public payable {
+    require(_gameId > 0, "Game id is negative!");
+
+    address sender = msg.sender;
+
+    require(
+        gameList[_gameId].creator == sender || contains(gameList[_gameId].joiners, sender),
+        "Player not in that game!"
+    );
+
+    if (!_response) {
+        require(gameList[_gameId].creator != sender, "Creator cannot refuse their own game!");
+        remove(gameList[_gameId].joiners,sender);
+        elencoGiochiDisponibili.push(_gameId);
+
+        emit AmountEthResponse(sender, gameList[_gameId].betAmount, _gameId, 0);
+    } else {
+        require(msg.value == gameList[_gameId].ethBalance, "ETH amount is wrong!");
+
+        gameList[_gameId].betAmount += msg.value;
+
+        emit AmountEthResponse(sender, gameList[_gameId].ethBalance, _gameId, 1);
+    }
+}
+
+
+
     
     function getInfo(uint256 _gameId) private view returns (info memory) {
         // Restituisce la struttura dati "info" associata al gameId specificato
         return gameList[_gameId];
     }
 
-    function getRandomNumber(uint256 max) private view  returns (uint256) {
+   function getRandomNumber(uint256 max) private view returns (uint256) {
+    uint256 seed;
+    assembly {
+        // Ottieni il timestamp del blocco
+        let timestampp := timestamp()
+        // Ottieni l'indirizzo del mittente del messaggio
+        let sender := caller()
+        
 
-        uint256 seed = uint256(keccak256(abi.encodePacked(block.timestamp, msg.sender)));
-        return seed % max;
+        // Calcola l'hash keccak256
+        seed := keccak256(timestampp,sender)
     }
+    return seed % max;
+}
+
+
+
+
+
+
 
 
     function randomGame() private returns (uint256 idGiocoCasuale) {
@@ -120,23 +185,29 @@ contract Bingo {
     removeFromArray(idGiocoCasuale);// Rimuove il gioco dalla lista degli ID disponibili se il massimo num di giocatori e' stato superato
     return idGiocoCasuale;
 }
+
 function removeFromArray(uint256 _gameId) private returns (bool) {
     // Trova l'indice dell'elemento da rimuovere
     uint256 index = findIndex(_gameId);
 
     // Verifica se l'elemento è stato trovato e se il numero totale di partecipanti supera il limite
-    if (index < elencoGiochiDisponibili.length) {
+    if (index < elencoGiochiDisponibili.length && index >= 0) {
         info storage gameInfo = gameList[_gameId];
         if (gameInfo.totalJoiners > gameInfo.maxJoiners) {
-            // Sostituisci l'elemento da rimuovere con l'ultimo elemento nell'array
-            elencoGiochiDisponibili[index] = elencoGiochiDisponibili[elencoGiochiDisponibili.length - 1];
-            // Rimuovi l'ultimo elemento (che ora si trova in posizione index)
-            elencoGiochiDisponibili.pop();
+            assembly {
+                // Carica l'ultimo elemento dell'array
+                let lastElement := sload(add(add(elencoGiochiDisponibili.slot, 0x20), mul(sub(sload(elencoGiochiDisponibili.slot), 1), 0x20)))
+                // Sostituisci l'elemento da rimuovere con l'ultimo elemento
+                sstore(add(add(elencoGiochiDisponibili.slot, 0x20), mul(index, 0x20)), lastElement)
+                // Riduci la lunghezza dell'array
+                sstore(elencoGiochiDisponibili.slot, sub(sload(elencoGiochiDisponibili.slot), 1))
+            }
             return true;
         }
     }
     return false;
 }
+
 
 // Trova l'indice dell'elemento specificato nell'array elencoGiochiDisponibili
 function findIndex(uint256 _gameId) private view returns (uint256) {
@@ -150,6 +221,52 @@ function findIndex(uint256 _gameId) private view returns (uint256) {
 }
 
 
+
+function contains(address[] memory array, address element) internal view returns (bool) {
+    assembly {
+        // Ottieni la lunghezza dell'array
+        let length := mload(array)
+
+        // Inizia il loop for con l'indice i = 0
+        for {
+            let i := 0
+        } lt(i, length) { // Continua finché i < length
+            // Incrementa l'indice i
+            i := add(i, 1)
+        } {
+            // Controlla se l'elemento è uguale all'elemento cercato
+            if eq(sload(add(add(array, 0x20), mul(i, 0x20))), element) {
+                // Se trovi l'elemento, restituisci true
+                let result := 1
+                return(result, 32)
+            }
+        }
+    }
+    // Se l'elemento non è stato trovato, restituisci false
+    return false;
+}
+
+
+
+
+function remove(address[] memory array, address element) internal pure returns (address[] memory) {
+    uint256 length = array.length;
+    // Cerca l'elemento nell'array
+    for (uint256 i = 0; i < length; i++) {
+        if (array[i] == element) {
+            // Se trovi l'elemento, sposta l'ultimo elemento nell'indice corrente
+            array[i] = array[length - 1];
+            // Riduci la lunghezza dell'array
+            assembly {
+                mstore(array, sub(length, 1))
+            }
+            // Restituisci l'array con un elemento in meno
+            return array;
+        }
+    }
+    // Se l'elemento non è stato trovato, restituisci l'array originale
+    return array;
+}
 
     // Add other functions as needed
 }
