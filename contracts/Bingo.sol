@@ -34,6 +34,12 @@ contract Bingo {
         uint256 indexed _gameId
             
     );
+    event Checkvalue(
+        uint256 indexed _gameId,
+        address _address,
+        uint256 _row,
+        uint256 _col
+    );
     //TODO: AGGIUNGI DIVERSI LOSERS
     event GameEnded(
         uint256 indexed _gameId,
@@ -267,6 +273,63 @@ function remove(address[] memory array, address element) internal pure returns (
     // Se l'elemento non è stato trovato, restituisci l'array originale
     return array;
 }
+
+
+    function submitBoard(uint256 _gameId, bytes32 _merkleRoot) public {
+    // Verifica che l'ID del gioco sia valido
+    require(_gameId > 0, "Game id is negative!");
+
+    // Ottiene il gioco corrispondente all'ID fornito dalla mappa gameList
+    info memory game = gameList[_gameId];
+    // Ottiene l'indirizzo del mittente della transazione
+    address sender = msg.sender;
+
+    // Verifica che il mittente sia uno dei partecipanti al gioco
+    require(
+        gameList[_gameId].creator == sender || contains(gameList[_gameId].joiners, sender),
+        "Player not in that game!"
+    );
+
+    // Verifica che il giocatore non abbia già inviato il proprio merkle root
+    require(
+        (game.creator == sender && game.creatorMerkleRoot == 0) ||
+        (contains(gameList[_gameId].joiners, sender) && game.joinerMerkleRoots == 0),//TODO: aggiorna per piu utenti
+        "Board already submitted!"
+    );
+    if (game.creator == sender) {
+        game.creatorMerkleRoot = _merkleRoot;
+    } else {
+        game.joinerMerkleRoots = _merkleRoot;
+    }
+    // Aggiorna le variabili di stato solo se necessario
+    if (game.creator == sender) {
+        gameList[_gameId].creatorMerkleRoot = game.creatorMerkleRoot;
+    } else {
+        gameList[_gameId].joinerMerkleRoots = game.joinerMerkleRoots;
+    }
+}
+
+    function shot(uint256 _gameId, uint256 _row, uint256 _col) public {
+    // Check if the game ID is valid
+    require(_gameId > 0, "Invalid game ID");
+
+    // Check if the sender is a participant in the game
+    address sender = msg.sender;
+    require(gameList[_gameId].creator == sender || gameList[_gameId].joiner == sender, "Not a participant");
+
+    // If there's an accuser, resolve the accusation
+    if (gameList[_gameId].accuser != address(0)) {
+        emit ResolveAccuse(_gameId, gameList[_gameId].accuser);
+        gameList[_gameId].accuser = address(0);
+        gameList[_gameId].accusationTime = 0;
+    }
+
+    // Determine opponent's address and emit the event
+    address opponentAddress = (sender == gameList[_gameId].creator) ? gameList[_gameId].joiner : gameList[_gameId].creator;
+    emit CheckValue(_gameId, opponentAddress, _row, _col);
+}
+
+
 
     // Add other functions as needed
 }
