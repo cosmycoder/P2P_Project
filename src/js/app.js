@@ -193,6 +193,18 @@ refuseEthAmount: function() {
     $('#acceptAmount').hide();
     $('#gameBoard').hide();
   },
+  generateMerkleProof: function(merkleTree, row, col, boardSize) {
+    const merkleProof = [];
+    let flatIndex = row * boardSize + col;
+
+    for (let i = 0; i < merkleTree.length - 1; i++) {
+        const siblingIndex = (flatIndex % 2 == 0) ? flatIndex + 1 : flatIndex - 1;
+        merkleProof.push(merkleTree[i][siblingIndex]);
+        flatIndex = Math.floor(flatIndex / 2);
+    }
+
+    return merkleProof;
+  },
   createBoardTable: function () {
     // Function to create a board for the placement phase
     // Get the div "gameBoard" and add the template size
@@ -334,6 +346,8 @@ refuseEthAmount: function() {
     }).catch(function(err) {
       console.log(err.message);
     });
+
+    
   },
 
 

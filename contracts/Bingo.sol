@@ -9,7 +9,7 @@ contract Bingo {
         uint ethBalance;
         uint betAmount;
         bytes32 creatorMerkleRoot;
-        bytes32 joinerMerkleRoots; //TODO: implementa piu persone
+        mapping(address => bytes32) joinerMerkleRoots; //TODO: implementa piu persone
         uint accusationTime;
         address accuser;
     }
@@ -68,28 +68,21 @@ contract Bingo {
         // Add constructor code
     }
     
-    function createGame(uint _maxJoiners, uint _betAmount)  public payable {
+    function createGame(uint _maxJoiners, uint _betAmount) public payable {
         require(_maxJoiners > 0, "Max joiners must be greater than 0");
         require(_betAmount > 0, "Bet amount must be greater than 0");
 
-    
-        uint256 gameID = getIDGame();
-        info memory newGame;
+        uint256 gameID = gameId++;
+        info storage newGame = gameList[gameID];
         newGame.creator = msg.sender;
-        newGame.joiners = new address[](0);
         newGame.maxJoiners = _maxJoiners;
-        newGame.totalJoiners = 0;
-        newGame.ethBalance = 0;
         newGame.betAmount = _betAmount;
+        newGame.ethBalance = msg.value;
         newGame.creatorMerkleRoot = 0;
-        newGame.joinerMerkleRoots = 0; //TODO: aggiorna per piu utenti
         newGame.accusationTime = 0;
         newGame.accuser = address(0);
-       
-        gameList[gameID] = newGame;
-           
+
         elencoGiochiDisponibili.push(gameID);
-        gameList[gameID].ethBalance += msg.value;
         emit GameCreated(gameID);
     }
     
@@ -151,7 +144,7 @@ contract Bingo {
 
 
     
-    function getInfo(uint256 _gameId) private view returns (info memory) {
+    function getInfo(uint256 _gameId) private view returns (info storage) {
         // Restituisce la struttura dati "info" associata al gameId specificato
         return gameList[_gameId];
     }
@@ -170,11 +163,6 @@ contract Bingo {
     }
     return seed % max;
 }
-
-
-
-
-
 
 
 
@@ -280,7 +268,7 @@ function remove(address[] memory array, address element) internal pure returns (
     require(_gameId > 0, "Game id is negative!");
 
     // Ottiene il gioco corrispondente all'ID fornito dalla mappa gameList
-    info memory game = gameList[_gameId];
+    info storage game = gameList[_gameId];
     // Ottiene l'indirizzo del mittente della transazione
     address sender = msg.sender;
 
@@ -293,19 +281,13 @@ function remove(address[] memory array, address element) internal pure returns (
     // Verifica che il giocatore non abbia già inviato il proprio merkle root
     require(
         (game.creator == sender && game.creatorMerkleRoot == 0) ||
-        (contains(gameList[_gameId].joiners, sender) && game.joinerMerkleRoots == 0),//TODO: aggiorna per piu utenti
+        (contains(gameList[_gameId].joiners, sender) && game.joinerMerkleRoots[sender] == 0),//TODO: aggiorna per piu utenti
         "Board already submitted!"
     );
     if (game.creator == sender) {
         game.creatorMerkleRoot = _merkleRoot;
     } else {
-        game.joinerMerkleRoots = _merkleRoot;
-    }
-    // Aggiorna le variabili di stato solo se necessario
-    if (game.creator == sender) {
-        gameList[_gameId].creatorMerkleRoot = game.creatorMerkleRoot;
-    } else {
-        gameList[_gameId].joinerMerkleRoots = game.joinerMerkleRoots;
+        game.joinerMerkleRoots[sender] = _merkleRoot;
     }
 }
 
@@ -315,7 +297,7 @@ function remove(address[] memory array, address element) internal pure returns (
 
     // Check if the sender is a participant in the game
     address sender = msg.sender;
-    require(gameList[_gameId].creator == sender || gameList[_gameId].joiner == sender, "Not a participant");
+    require(gameList[_gameId].creator == sender || contains(gameList[_gameId].joiners, sender), "Not a participant");
 
     // If there's an accuser, resolve the accusation
     if (gameList[_gameId].accuser != address(0)) {
@@ -325,8 +307,8 @@ function remove(address[] memory array, address element) internal pure returns (
     }
 
     // Determine opponent's address and emit the event
-    address opponentAddress = (sender == gameList[_gameId].creator) ? gameList[_gameId].joiner : gameList[_gameId].creator;
-    emit CheckValue(_gameId, opponentAddress, _row, _col);
+   /* address opponentAddress = (sender == gameList[_gameId].creator) ? gameList[_gameId].joiner : gameList[_gameId].creator;
+    emit Checkvalue(_gameId, opponentAddress, _row, _col);*/
 }
 
 
