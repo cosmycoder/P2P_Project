@@ -1,7 +1,7 @@
 {
-  "name": "Bingo",
+  "name": "bingo",
   "version": "1.0.0",
-  "description": "",
+  "description": "Peer to Peer and blockchain project for uni 2024",
   "main": "truffle.js",
   "directories": {
     "test": "test"
@@ -14,5 +14,11 @@
   "license": "ISC",
   "devDependencies": {
     "lite-server": "^2.6.1"
-  }
+  },
+  "dependencies": {
+    "@openzeppelin/cli": "^2.8.2",
+    "@openzeppelin/contracts": "^5.0.2",
+    "openzeppelin-solidity": "3.4.2"
+  },
+  "keywords": []
 }

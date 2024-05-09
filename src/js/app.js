@@ -1,7 +1,16 @@
 
+/************************************************ */
+/**             Global variables                 **/
+/************************************************ */
 var gameId = null;
 var ethAmmount = null;
 var boardSize = 5;
+var board = null;
+
+
+/************************************************ */
+/**                App init                      **/
+/************************************************ */
 App = {
   web3Provider: null,
   contracts: {},
@@ -34,7 +43,9 @@ App = {
     return App.initContract();
   },
 
-
+/************************************************ */
+/**            Smart contract init               **/
+/************************************************ */
   
   initContract: function() {
     $.getJSON('Bingo.json', function(data) {
@@ -49,12 +60,12 @@ App = {
     return App.bindEvents();
   },
 
+/************************************************ */
+/** Event binding to index.html objects          **/
+/************************************************ */
   bindEvents: function() {
     console.log("Binding events...");
-
-
-
-    console.log($('#newGame'));
+    //console.log($('#newGame'));
     $(document).on('click', '#createNewGameBtn', App.handleCreateRoom);
     $(document).on('click', '#backToMenuBtn', App.backToMainMenu);
     $(document).on('click', '#createGameBtn', App.createGame);
@@ -65,10 +76,30 @@ App = {
     $(document).on('click', '#refuseAmountBtn', App.refuseEthAmount);
 
 },
+/************************************************ */
+/**            BACK TO MAIN MENU METHOD          **/
+/************************************************ */
+backToMainMenu: function (event) { // function for back to the menu
+  // show the main menu:
+  console.log("back to menu");
+  $('#initialsection').show();
+  //$('#gameFase').show();
+  // hide all the remaining parts:
+  $('#newGame').hide();
+  $('#joinSpecificGame').hide();
+  $('#waitingOpponent').hide();
+  $('#acceptAmount').hide();
+  $('#gameBoard').hide();
+},
+
+/************************************************ */
+/**            ETH ACCEPT/REFUSE METHODS         **/
+/************************************************ */
 showAcceptEthAmount: function() {
   $('#joinSpecificGame').hide();
   $('#initialsection').hide();
-  
+
+  //show info about the game to be accepted
   var acceptAmountText = document.getElementById('acceptAmountText');
   acceptAmountText.innerHTML = "<h2>Do you want to start the game with id " + gameId +
     "<h2>The amount of ETH to bet is " + ethAmmount + " ETH.</h2>";
@@ -78,6 +109,7 @@ showAcceptEthAmount: function() {
 acceptEthAmount: function() {
   App.contracts.Bingo.deployed().then(async function(instance) {
     const newInstance = instance;
+    //call contract amountEthDecision function passing (gameid and true for accept). value is in msg.value
     return newInstance.amountEthDecision(gameId, true, { value: (ethAmount * 1000000000000000000) });
   }).then(async function(logArray) {
     App.handleEvents();
@@ -85,6 +117,7 @@ acceptEthAmount: function() {
     console.log(err.message);
   });
 },
+
 refuseEthAmount: function() {
   App.contracts.Bingo.deployed().then(async function(instance) {
     const newInstance = instance;
@@ -96,11 +129,12 @@ refuseEthAmount: function() {
   });
 },
 
-
+/************************************************ */
+/**            JOIN METHODS                      **/
+/************************************************ */
   joinRandomGame: function () {
-   App.joinedGame (true);
+   App.joinedGame (true); //true for random game, false for specific game
   },
-
 
   joinedSpecific: function () {
     $('#joinSpecificGame').show();
@@ -114,25 +148,22 @@ refuseEthAmount: function() {
       chosenGame = 0;
       $('#setUpNewGame').hide();
     } else {
-      chosenGame = $('#selectedGameId').val();
+      chosenGame = $('#selectedGameId').val(); //take the game id from the input
     }
   
     App.contracts.Bingo.deployed().then(async function (instance) {
       const newInstance = instance;
-      return newInstance.joinGame(chosenGame);
+      return newInstance.joinGame(chosenGame);//call the contract joinGame function passing the selected gameID
     }).then(async function (logs) {
       const gameId = logs.logs[0].args._gameId.toNumber();
       const ethAmount = logs.logs[0].args._ethAmount.toNumber();
       
-  
+      //init the matrix 5*5
       const myBoardMatrix = [];
-      const opponentBoardMatrix = [];
       for (let i = 0; i < boardSize; i++) {
         myBoardMatrix[i] = [];
-        opponentBoardMatrix[i] = [];
         for (let j = 0; j < boardSize; j++) {
           myBoardMatrix[i][j] = 0;
-          opponentBoardMatrix[i][j] = 0;
         }
       }
   
@@ -142,28 +173,35 @@ refuseEthAmount: function() {
     });
   },
   
+/************************************************ */
+/**            Create game METHODS               **/
+/************************************************ */ 
+handleCreateRoom: function (event) { // function to show the create game menu
+    $("#newGame").show();
+    $("#initialsection").hide();
+  },
+
   createGame: function () {
-    ethAmmount = $('#ethAmmount').val();
+    ethAmount = $('#ethAmount').val();
+    maxnumjoiner = $('#playerNum').val();
     iHostTheGame = true;
-    // Call to the contract
+  
     App.contracts.Bingo.deployed().then(async function (instance) {
       newInstance = instance;
-      return newInstance.createGame({ value: 0 }); // No value needed for bingo
+      return newInstance.createGame(maxnumjoiner,ethAmount,{ value: 0 }); // No value needed for bingo
     }).then(async function (logArray) { // Callback to the contract function createGame
       gameId = logArray.logs[0].args._gameId.toNumber(); // Get the gameId from the event emitted in the contract
       if (gameId < 0) {
         console.error("Something went wrong, game id is negative!");
       }
       else {
-        // Waiting room:
         $('#newGame').hide();
         $('#waitingOpponent').show();
         document.getElementById('waitingOpponentConnection').innerHTML = "<h2>Creation of a Bingo board.</h2>" +
           "<h2>Waiting for an opponent! The Game ID is " + gameId + "!</h2>";
   
-        // Board matrix initialization
+        // Board matrix initialization 5*5
         bingoBoard = [];
-  
         for (var i = 0; i < boardSize; i++) {
           bingoBoard[i] = [];
           for (var j = 0; j < boardSize; j++) {
@@ -178,21 +216,11 @@ refuseEthAmount: function() {
       console.log(err.message);
     });
   },
-  handleCreateRoom: function (event) { // function to show the create game menu
-    $("#newGame").show();
-    $("#initialsection").hide();
-  },
-  backToMainMenu: function (event) { // function for back to the menu
-    // show the main menu:
-    console.log("back to menu");
-    $('#initialsection').show();
-    // hide all the remaining parts:
-    $('#newGame').hide();
-    $('#joinSpecificGame').hide();
-    $('#waitingOpponent').hide();
-    $('#acceptAmount').hide();
-    $('#gameBoard').hide();
-  },
+
+/************************************************ */
+/**            Merkle Proof                      **/
+/************************************************ */
+  
   generateMerkleProof: function(merkleTree, row, col, boardSize) {
     const merkleProof = [];
     let flatIndex = row * boardSize + col;
@@ -208,7 +236,7 @@ refuseEthAmount: function() {
   createBoardTable: function () {
     // Function to create a board for the placement phase
     // Get the div "gameBoard" and add the template size
-    const board = document.getElementById('gameBoard');
+    board = document.getElementById('gameBoard');
     board.style = "grid-template-columns: 40px repeat(" + boardSize + ", 1fr);grid-template-rows: 40px repeat(" + boardSize + ", 1fr);"
   
     // Creation of the header column:
@@ -269,94 +297,6 @@ refuseEthAmount: function() {
       }
     }
   },
-  handleEvents: function() {
-    App.contracts.Bingo.deployed().then(async function(instance) {
-      const newInstance = instance;
-      // Event listener for gameCreated event
-      newInstance.gameCreated({}, { fromBlock: 'latest' }).watch(function(error, event) {
-        if (!error) {
-          const gameId = event.args._gameId.toNumber();
-          const ethAmount = event.args._ethAmount.toNumber();
-          console.log("Game created with ID: " + gameId + ", ETH amount: " + ethAmount);
-          // TODO: Handle the gameCreated event
-        } else {
-          console.error(error);
-        }
-      });
-
-      // Event listener for gameJoined event
-      newInstance.gameJoined({}, { fromBlock: 'latest' }).watch(function(error, event) {
-        if (!error) {
-          const gameId = event.args._gameId.toNumber();
-          const player = event.args._player;
-          console.log("Player " + player + " joined game with ID: " + gameId);
-          // TODO: Handle the gameJoined event
-        } else {
-          console.error(error);
-        }
-      });
-
-      // Event listener for amountEthDecision event
-      newInstance.amountEthDecision({}, { fromBlock: 'latest' }).watch(function(error, event) {
-        if (!error) {
-          const gameId = event.args._gameId.toNumber();
-          const player = event.args._player;
-          const accepted = event.args._accepted;
-          console.log("Player " + player + " made an ETH amount decision for game with ID: " + gameId + ", Accepted: " + accepted);
-          // TODO: Handle the amountEthDecision event
-        } else {
-          console.error(error);
-        }
-      });
-
-      // Event listener for gameStarted event
-      newInstance.gameStarted({}, { fromBlock: 'latest' }).watch(function(error, event) {
-        if (!error) {
-          const gameId = event.args._gameId.toNumber();
-          console.log("Game with ID: " + gameId + " started");
-          // TODO: Handle the gameStarted event
-        } else {
-          console.error(error);
-        }
-      });
-
-      // Event listener for numberCalled event
-      newInstance.numberCalled({}, { fromBlock: 'latest' }).watch(function(error, event) {
-        if (!error) {
-          const gameId = event.args._gameId.toNumber();
-          const number = event.args._number.toNumber();
-          console.log("Number " + number + " called for game with ID: " + gameId);
-          // TODO: Handle the numberCalled event
-        } else {
-          console.error(error);
-        }
-      });
-
-      // Event listener for gameEnded event
-      newInstance.gameEnded({}, { fromBlock: 'latest' }).watch(function(error, event) {
-        if (!error) {
-          const gameId = event.args._gameId.toNumber();
-          const winner = event.args._winner;
-          console.log("Game with ID: " + gameId + " ended, Winner: " + winner);
-          // TODO: Handle the gameEnded event
-        } else {
-          console.error(error);
-        }
-      });
-    }).catch(function(err) {
-      console.log(err.message);
-    });
-
-    
-  },
-
-
-
-
-
-
-
-  
 
 };
 function loader()
