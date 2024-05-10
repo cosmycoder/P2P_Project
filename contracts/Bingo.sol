@@ -239,7 +239,7 @@ function remove(address[] memory array, address element) internal pure returns (
         newGame.joinerMerkleRoots[msg.sender] = 0;
 
         elencoGiochiDisponibili.push(gameID);
-        newGame.ethBalance +=  msg.value;
+        newGame.ethBalance +=  _betAmount;
 
         emit GameCreated(gameID);
     }
