@@ -34,7 +34,7 @@ App = {
     return App.initContract();
   },
 
-
+// Commento per PR
   
   initContract: function() {
     $.getJSON('Bingo.json', function(data) {
