@@ -108,11 +108,8 @@ contract Bingo {
         if (elencoGiochiDisponibili.length == 0) {
             return 0;
         }
-
         uint256 indiceCasuale = getRandomNumber(elencoGiochiDisponibili.length);
         idGiocoCasuale = elencoGiochiDisponibili[indiceCasuale];// Ottiene l'ID del gioco corrispondente all'indice casuale
-
-        
         removeFromGameList(idGiocoCasuale);// Rimuove il gioco dalla lista degli ID disponibili se il massimo num di giocatori e' stato superato
         return idGiocoCasuale;
     }
@@ -146,7 +143,6 @@ contract Bingo {
         }
         return computedHash == _root;
     }
-
 
     function removeFromGameList(uint256 _gameId) private returns (bool) {
         // Trova l'indice dell'elemento da rimuovere
