@@ -37,9 +37,10 @@ App = {
     }
     // If no injected web3 instance is detected, fall back to Ganache
     else {
-      App.web3Provider = new Web3.providers.HttpProvider('http://localhost:7545');
+      App.web3Provider = new Web3.providers.HttpProvider('http://127.0.0.1:7545');
     }
     web3 = new Web3(App.web3Provider);
+    web3.eth.defaultAccount = web3.eth.accounts[0];
     return App.initContract();
   },
 
@@ -187,8 +188,8 @@ handleCreateRoom: function (event) { // function to show the create game menu
     iHostTheGame = true;
   
     App.contracts.Bingo.deployed().then(async function (instance) {
-      newInstance = instance;
-      return newInstance.createGame(maxnumjoiner,ethAmount,{ value: 0 }); // No value needed for bingo
+      newInstance = instance
+      return newInstance.createGame(maxnumjoiner, ethAmount);
     }).then(async function (logArray) { // Callback to the contract function createGame
       gameId = logArray.logs[0].args._gameId.toNumber(); // Get the gameId from the event emitted in the contract
       if (gameId < 0) {
