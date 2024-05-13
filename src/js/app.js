@@ -77,6 +77,24 @@ App = {
     $(document).on('click', '#refuseAmountBtn', App.refuseEthAmount);
 
 },
+handleEvents: async function() {
+  let lastBlock = null;
+  // placeholder for now
+  console.log("Handling event");
+  await newInstance.allEvents(
+    (err, events) => {
+      console.log(err);
+      console.log(events);
+      console.log(`Handling event ${events.event}`)
+      if (events.event == "GameCreated" && events.args._gameId.toNumber() == gameId && events.blockNumber != lastBlock) {
+        lastBlock = events.blockNumber;
+        console.log("Last block: " + lastBlock);
+        App.createBoardTable()
+
+      }
+    }
+  );
+},
 /************************************************ */
 /**            BACK TO MAIN MENU METHOD          **/
 /************************************************ */
@@ -101,7 +119,7 @@ showAcceptEthAmount: function() {
   $('#initialsection').hide();
 
   //show info about the game to be accepted
-  var acceptAmountText = document.getElementById('acceptAmountText');
+  const acceptAmountText = document.getElementById('acceptAmountText');
   acceptAmountText.innerHTML = "<h2>Do you want to start the game with id " + gameId +
     "<h2>The amount of ETH to bet is " + ethAmmount + " ETH.</h2>";
   $('#acceptAmount').show();
@@ -184,12 +202,12 @@ handleCreateRoom: function (event) { // function to show the create game menu
 
   createGame: function () {
     ethAmount = $('#ethAmount').val();
-    maxnumjoiner = $('#playerNum').val();
+    maxPlayers = $('#playerNum').val();
     iHostTheGame = true;
   
     App.contracts.Bingo.deployed().then(async function (instance) {
       newInstance = instance
-      return newInstance.createGame(maxnumjoiner, ethAmount);
+      return newInstance.createGame(maxPlayers, ethAmount);
     }).then(async function (logArray) { // Callback to the contract function createGame
       gameId = logArray.logs[0].args._gameId.toNumber(); // Get the gameId from the event emitted in the contract
       if (gameId < 0) {
@@ -199,7 +217,7 @@ handleCreateRoom: function (event) { // function to show the create game menu
         $('#newGame').hide();
         $('#waitingOpponent').show();
         document.getElementById('waitingOpponentConnection').innerHTML = "<h2>Creation of a Bingo board.</h2>" +
-          "<h2>Waiting for an opponent! The Game ID is " + gameId + "!</h2>";
+          "<h2>Waiting for other players! The Game ID is " + gameId + "!</h2>";
   
         // Board matrix initialization 5*5
         bingoBoard = [];
