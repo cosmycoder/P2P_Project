@@ -17,7 +17,6 @@ const CreateRoom = ({setView}) => {
 			setGameId(parseInt(logArray.events.GameCreated.returnValues._gameId));
 			setWaiting(true);
 		});
-
 	}
 	return (
 		<div className="flex justify-center items-center h-screen">
@@ -35,8 +34,7 @@ const CreateRoom = ({setView}) => {
 					<h1 className="text-center text-2xl text-white">{`Stanza numero ${gameId}`}</h1>
 					<h1 className="text-center text-2xl text-white">{"Aspetto che altri giocatori si connettano!"}</h1>
 					<CircularProgress className="m-auto"/>
-				
-			</div>
+				</div>
 			)
 			
 		}

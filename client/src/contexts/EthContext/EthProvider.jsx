@@ -9,10 +9,8 @@ function EthProvider({ children }) {
   const init = useCallback(
     async artifact => {
       if (artifact) {
-        
         const web3 = new Web3(Web3.givenProvider || "ws://127.0.0.1:7545");
-        const accounts = await web3.eth.requestAccounts();
-        web3.eth.defaultAccount = accounts[0];
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
         const networkID = await web3.eth.net.getId();
         const { abi } = artifact;
         let address, contract;

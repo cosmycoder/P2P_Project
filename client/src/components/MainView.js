@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Button } from "@mui/material"; 
 import CreateRoom from "./CreateRoom";
+import JoinRandomGame from "./JoinRandomGame";
+
 const MainView = () => {
 	const [view, setView] = useState("")
 	return(
@@ -25,9 +27,7 @@ const MainView = () => {
 			<CreateRoom setView={setView} />
 		}{
 			view === "joinRandomGame" &&
-			<div className="flex justify-center items-center h-screen">
-				<Button variant="outlined" onClick={() => {setView("")}}>Torna indietro</Button>
-			</div>
+			<JoinRandomGame setView={setView} />
 		}{
 			view === "joinGame" &&
 			<div className="flex justify-center items-center h-screen">
