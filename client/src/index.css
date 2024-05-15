@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-slate-700
+}
+.tile {
+  @apply w-40 h-40 text-white bg-indigo-500 hover:bg-indigo-700 rounded-md p-4 flex text-center items-center
+}
+
