@@ -1,9 +1,17 @@
 import { Button, TextField, CircularProgress } from "@mui/material"; 
 import useEth from "../contexts/EthContext/useEth";
 import { useState } from "react";
-
+import Board from "./Board";
 
 const CreateRoom = ({setView}) => {
+	const mockTable = [
+		[67, 24, 45, 82, 13],
+		[91, 56, 78, 33, 42],
+		[10, 99, 61, 29, 54],
+		[73, 17, 88, 36, 25],
+		[47, 59, 3, 80, 66]
+	]
+	
 	const { state: { contract, accounts } } = useEth();
 	const [maxPlayers, setMaxPlayers] = useState(2);
 	const [ethBet, setEthBet] = useState(1);
@@ -30,11 +38,12 @@ const CreateRoom = ({setView}) => {
 				</div>
 			</div>) :
 			(
-				<div className="grid grid-rows-2 gap-4">
-					<h1 className="text-center text-2xl text-white">{`Stanza numero ${gameId}`}</h1>
-					<h1 className="text-center text-2xl text-white">{"Aspetto che altri giocatori si connettano!"}</h1>
-					<CircularProgress className="m-auto"/>
-				</div>
+				// <div className="grid grid-rows-2 gap-4">
+				// 	<h1 className="text-center text-2xl text-white">{`Stanza numero ${gameId}`}</h1>
+				// 	<h1 className="text-center text-2xl text-white">{"Aspetto che altri giocatori si connettano!"}</h1>
+				// 	<CircularProgress className="m-auto"/>
+				// </div>
+				<Board size={5} table={mockTable}/>
 			)
 			
 		}
