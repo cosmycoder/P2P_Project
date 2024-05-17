@@ -90,17 +90,12 @@ contract Bingo {
     }
 
 
-    function getRandomNumber(uint256 max) private view returns (uint256) {
-        uint256 seed;
-        assembly {
-            // Ottieni il timestamp del blocco
-            let timestampp := timestamp()
-            // Ottieni l'indirizzo del mittente del messaggio
-            let sender := caller()
-            // Calcola l'hash keccak256
-            seed := keccak256(timestampp,sender)
-        }
-        return seed % max;
+    function getRandomNumber(uint256 _max) private view returns (uint256) {
+       require(_max > 0, "Max must be greater than 0");
+        // Generate the random number
+        uint randomHash = uint(keccak256(abi.encodePacked(block.timestamp, block.difficulty, msg.sender)));
+        // Ensure the result is within the desired range
+        return (randomHash % _max);
     }
 
     function getRandomGame() private returns (uint256 idGiocoCasuale) {
@@ -110,7 +105,7 @@ contract Bingo {
         }
         uint256 indiceCasuale = getRandomNumber(elencoGiochiDisponibili.length);
         idGiocoCasuale = elencoGiochiDisponibili[indiceCasuale];// Ottiene l'ID del gioco corrispondente all'indice casuale
-        removeFromGameList(idGiocoCasuale);// Rimuove il gioco dalla lista degli ID disponibili se il massimo num di giocatori e' stato superato
+        removeFromGiochiDisponibili(idGiocoCasuale);// Rimuove il gioco dalla lista degli ID disponibili se il massimo num di giocatori e' stato superato
         return idGiocoCasuale;
     }
 
@@ -144,24 +139,16 @@ contract Bingo {
         return computedHash == _root;
     }
 
-    function removeFromGameList(uint256 _gameId) private returns (bool) {
-        // Trova l'indice dell'elemento da rimuovere
+    function remove(uint256 _gameId) public  returns (bool) {
         uint256 index = findIndex(_gameId);
-
-        // Verifica se l'elemento è stato trovato e se il numero totale di partecipanti supera il limite
-        if (index < elencoGiochiDisponibili.length && index >= 0) {
-            info storage gameInfo = gameList[_gameId];
-            if (gameInfo.totalJoiners > gameInfo.maxJoiners) {
-                assembly {
-                    // Carica l'ultimo elemento dell'array
-                    let lastElement := sload(add(add(elencoGiochiDisponibili.slot, 0x20), mul(sub(sload(elencoGiochiDisponibili.slot), 1), 0x20)))
-                    // Sostituisci l'elemento da rimuovere con l'ultimo elemento
-                    sstore(add(add(elencoGiochiDisponibili.slot, 0x20), mul(index, 0x20)), lastElement)
-                    // Riduci la lunghezza dell'array
-                    sstore(elencoGiochiDisponibili.slot, sub(sload(elencoGiochiDisponibili.slot), 1))
-                }
+        // Verifica se l'elemento è stato trovato e se il numero totale di partecipanti raggiunge il limite
+        if (index < elencoGiochiDisponibili.length) {
+                // Sostituisce l'elemento da rimuovere con l'ultimo elemento
+                elencoGiochiDisponibili[index] = elencoGiochiDisponibili[elencoGiochiDisponibili.length - 1];
+                // Rimuove l'ultimo elemento
+                elencoGiochiDisponibili.pop();
                 return true;
-            }
+            
         }
         return false;
     }
@@ -173,7 +160,7 @@ contract Bingo {
                 return i;
             }
         }
-        // Se l'elemento non è stato trovato, restituisci una posizione negativa
+        // Se l'elemento non è stato trovato, restituisci una posizione maggiore della lunghezza dell'array
         return elencoGiochiDisponibili.length+1;
     }
 
@@ -201,8 +188,8 @@ contract Bingo {
         return false;
     }
 
-//remove an address from an array
-function remove(address[] memory array, address element) internal pure returns (address[] memory) {
+    //remove an address from an array
+    function remove(address[] memory array, address element) internal pure returns (address[] memory) {
         uint256 length = array.length;
         for (uint256 i = 0; i < length; i++) {
             if (array[i] == element) {
@@ -215,6 +202,20 @@ function remove(address[] memory array, address element) internal pure returns (
         }
         return array;
     }
+    function removeFromGiochiDisponibili(uint256 _gameId) public  returns (bool) {
+        uint256 index = findIndex(_gameId);
+        // Verifica se l'elemento è stato trovato e se il numero totale di partecipanti raggiunge il limite
+        if (index < elencoGiochiDisponibili.length) {
+                // Sostituisce l'elemento da rimuovere con l'ultimo elemento
+                elencoGiochiDisponibili[index] = elencoGiochiDisponibili[elencoGiochiDisponibili.length - 1];
+                // Rimuove l'ultimo elemento
+                elencoGiochiDisponibili.pop();
+                return true;
+            
+        }
+        return false;
+    }
+
     /**************************************************************** */
     /**       Functions to handle main logic of game                 **/
     /**************************************************************** */
@@ -252,17 +253,20 @@ function joinGame(uint256 _gameId) public {
         chosenGameId = getRandomGame();
     } else {
         chosenGameId = _gameId;
-        require(removeFromGameList(chosenGameId), "This game does not exist!");
     }
-
+    //check if the game is available and if the player is not the creator
     require(chosenGameId > 0, "Chosen id negative!");
     require(gameList[chosenGameId].totalJoiners < gameList[chosenGameId].maxJoiners, "Game already taken!");
     require(gameList[chosenGameId].creator != msg.sender, "You can't join a game created by yourself!");
 
+    //add the player to the game
     gameList[chosenGameId].joiners.push(msg.sender);
     gameList[chosenGameId].totalJoiners++;
     gameList[chosenGameId].ethBalance += gameList[chosenGameId].betAmount;
-
+    if(gameList[chosenGameId].totalJoiners == gameList[chosenGameId].maxJoiners){
+        removeFromGiochiDisponibili(chosenGameId);
+        emit GameStarted(chosenGameId);
+    }
     emit GameJoined( 
             chosenGameId,
             gameList[chosenGameId].creator,
