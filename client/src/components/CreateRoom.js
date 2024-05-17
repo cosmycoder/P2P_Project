@@ -13,8 +13,8 @@ const CreateRoom = ({setView}) => {
 	]
 	
 	const { state: { contract, accounts } } = useEth();
-	const [maxPlayers, setMaxPlayers] = useState(2);
-	const [ethBet, setEthBet] = useState(1);
+	const [maxPlayers, setMaxPlayers] = useState();
+	const [ethBet, setEthBet] = useState();
 	const [gameId, setGameId] = useState();
 	const [waiting, setWaiting] = useState(false)
 	const re = /^[0-9\b]+$/;
@@ -29,11 +29,29 @@ const CreateRoom = ({setView}) => {
 	return (
 		<div className="flex justify-center items-center h-screen">
 			{!waiting ? (<div className="grid grid-rows-2 gap-4">
-				<TextField value={maxPlayers} onChange={(e) => {if (e.target.value === "" || re.test(e.target.value)) setMaxPlayers(e.target.value)}} id="outlined-basic" label="Massimo numero di giocatori" variant="outlined" />
-				<TextField value={ethBet} onChange={(e) => {if (e.target.value === "" || re.test(e.target.value)) setEthBet(e.target.value)}} id="outlined-basic" label="ETH da scommettere" variant="outlined" />
+				<input placeholder="Massimo numero di giocatori" className="text-field" value={maxPlayers} onChange={(e) => {if (e.target.value === "" || re.test(e.target.value)) setMaxPlayers(e.target.value)}} id="outlined-basic" label="Massimo numero di giocatori" variant="outlined" />
+				<input placeholder="ETH da scommettere" className="text-field" value={ethBet} onChange={(e) => {if (e.target.value === "" || re.test(e.target.value)) setEthBet(e.target.value)}} id="outlined-basic" label="ETH da scommettere" variant="outlined" />
 				<div  className="grid grid-cols-2 gap-4">
-					<Button variant="contained" onClick={() => {createGame()}}>Scommetti</Button>
-					<Button variant="outlined" onClick={() => {setView("")}}>Torna indietro</Button>
+					<Button 
+						className="dark:bg-blue-500 dark:hover:bg-blue-600 bg-blue-400
+								   hover:bg-blue-500 text-white items-center shadow-xl
+									transition duration-300" 
+						variant="contained" 
+						onClick={() => {createGame()}}>
+							Scommetti
+					</Button>
+					
+					<Button 
+						className="dark:border-blue-500 dark:hover:border-blue-600
+									dark:text-blue-500 dark:hover:text-blue-600
+									border-blue-400 hover:border-blue-500
+									text-blue-400 hover:text-blue-500
+									 items-center shadow-xl 
+									transition duration-300" 
+						variant="outlined" 
+						onClick={() => {setView("")}}>
+							Torna indietro
+					</Button>
 
 				</div>
 			</div>) :

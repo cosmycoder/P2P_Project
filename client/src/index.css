@@ -6,6 +6,23 @@ body {
   @apply dark:bg-slate-700 bg-slate-50
 }
 .tile {
-  @apply w-40 h-40 dark:text-white text-black dark:bg-indigo-500 bg-indigo-100 hover:bg-indigo-700 rounded-md p-4 flex text-center items-center
+  @apply 
+  w-40 h-40 dark:text-white text-black
+  dark:bg-blue-500 dark:hover:bg-blue-600 bg-blue-200 hover:bg-blue-300
+  rounded-md p-4 flex text-center items-center transition duration-300 shadow-lg
+}
+
+.theme-btn {
+  @apply w-10 h-10 dark:bg-blue-500 dark:hover:bg-blue-600
+  bg-blue-300 hover:bg-blue-400
+  text-white items-center rounded-xl shadow-xl transition duration-300
+}
+
+.text-field {
+  @apply bg-inherit p-3 rounded-md border-2 focus:outline-none 
+  focus:border-blue-400 border-[1px]
+  text-black border-black
+  dark:text-white dark:border-white
+  transition duration-200
 }
 
