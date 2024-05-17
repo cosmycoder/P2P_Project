@@ -9,8 +9,8 @@ const MainView = () => {
   const [view, setView] = useState("")
 	return(
 		<div>
-			 <div class="w-1/2 m-auto h-12 mt-7 rounded-lg dark:bg-blue-500 bg-blue-300 shadow-lg flex justify-center items-center">
-        <div class="text-black dark:text-white text-lg">Bingo ETH</div>
+			 <div className="w-1/2 m-auto h-12 mt-7 rounded-lg dark:bg-blue-500 bg-blue-300 shadow-lg flex justify-center items-center">
+        <div className="text-black dark:text-white text-lg">Bingo ETH</div>
     </div>
 		{ view === "" &&
 			<div className="flex justify-center items-center h-screen">

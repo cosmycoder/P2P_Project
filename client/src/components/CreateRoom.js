@@ -23,7 +23,10 @@ const CreateRoom = ({setView}) => {
 		const _ethBet = parseInt(ethBet);
 		contract.methods.createGame(_maxPlayers, _ethBet).send({ from: accounts[0], gas: 1000000 }).then((logArray) => {
 			setGameId(parseInt(logArray.events.GameCreated.returnValues._gameId));
-			setWaiting(true);
+		});
+		setWaiting(true);
+		contract.methods.joinGame(gameId).send({ from: accounts[0], gas: 1000000 }).then((logArray) => {
+			// handle more logic to print board
 		});
 	}
 	return (
@@ -56,14 +59,13 @@ const CreateRoom = ({setView}) => {
 				</div>
 			</div>) :
 			(
-				// <div className="grid grid-rows-2 gap-4">
-				// 	<h1 className="text-center text-2xl text-white">{`Stanza numero ${gameId}`}</h1>
-				// 	<h1 className="text-center text-2xl text-white">{"Aspetto che altri giocatori si connettano!"}</h1>
-				// 	<CircularProgress className="m-auto"/>
-				// </div>
-				<Board size={5} table={mockTable}/>
+				<div className="grid grid-rows-2 gap-4">
+					<h1 className="text-center text-2xl text-white">{`Stanza numero ${gameId}`}</h1>
+					<h1 className="text-center text-2xl text-white">{"Aspetto che altri giocatori si connettano!"}</h1>
+					<CircularProgress className="m-auto"/>
+				</div>
 			)
-			
+			// 	... <Board size={5} table={mockTable}/>
 		}
 		</div>
 	)
