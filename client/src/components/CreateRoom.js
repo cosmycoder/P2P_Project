@@ -25,9 +25,9 @@ const CreateRoom = ({setView}) => {
 			setGameId(parseInt(logArray.events.GameCreated.returnValues._gameId));
 		});
 		setWaiting(true);
-		contract.methods.joinGame(gameId).send({ from: accounts[0], gas: 1000000 }).then((logArray) => {
-			// handle more logic to print board
-		});
+		// contract.methods.joinGame(gameId).send({ from: accounts[0], gas: 1000000 }).then((logArray) => {
+		// 	// handle more logic to print board
+		// });
 	}
 	return (
 		<div className="flex justify-center items-center h-screen">
@@ -60,8 +60,8 @@ const CreateRoom = ({setView}) => {
 			</div>) :
 			(
 				<div className="grid grid-rows-2 gap-4">
-					<h1 className="text-center text-2xl text-white">{`Stanza numero ${gameId}`}</h1>
-					<h1 className="text-center text-2xl text-white">{"Aspetto che altri giocatori si connettano!"}</h1>
+					<h1 className="text-center text-2xl text-black dark:text-white">{`Stanza numero ${gameId}`}</h1>
+					<h1 className="text-center text-2xl text-black dark:text-white">{"Aspetto che altri giocatori si connettano!"}</h1>
 					<CircularProgress className="m-auto"/>
 				</div>
 			)
