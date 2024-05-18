@@ -15,6 +15,9 @@ const CreateRoom = ({setView}) => {
 		const _ethBet = parseInt(ethBet);
 		contract.methods.createGame(_maxPlayers, _ethBet).send({ from: accounts[0], gas: 1000000 }).then((logArray) => {
 			setGameId(parseInt(logArray.events.GameCreated.returnValues._gameId));
+			console.log(parseInt(logArray.events.GameCreated.returnValues._gameId));
+			//console.log(parseInt(logArray.events.GameCreated.returnValues._maxJoiners));
+			//console.log(parseInt(logArray.events.GameCreated.returnValues._totalJoiners));
 			setWaiting(true);
 		});
 	}

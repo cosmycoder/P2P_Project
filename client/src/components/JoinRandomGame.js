@@ -8,6 +8,7 @@ const JoinRandomGame = ({setView}) => {
 	const joinRandomGame = () => {
 		contract.methods.joinGame(0).send({ from: accounts[0], gas: 20000000 }).then((logArray) => {
 			console.log(parseInt(logArray.events.GameJoined.returnValues._gameId));
+			//console.log(parseInt(logArray.events.GameJoined.returnValues._totalJoiners));
 		});
 	}
 

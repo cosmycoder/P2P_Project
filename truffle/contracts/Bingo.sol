@@ -31,7 +31,7 @@ contract Bingo {
 /***************************************** */
     event outputerror(string myError); // event: error output
 
-    event GameCreated(uint256 indexed _gameId); //  Event to log game creation
+    event GameCreated(uint256 indexed _gameId, uint256 _maxJoiners,uint256 _totalJoiners); //  Event to log game creation
 
     //TODO: implementa piu persone
     event GameJoined(
@@ -105,7 +105,7 @@ contract Bingo {
         }
         uint256 indiceCasuale = getRandomNumber(elencoGiochiDisponibili.length);
         idGiocoCasuale = elencoGiochiDisponibili[indiceCasuale];// Ottiene l'ID del gioco corrispondente all'indice casuale
-        removeFromGiochiDisponibili(idGiocoCasuale);// Rimuove il gioco dalla lista degli ID disponibili se il massimo num di giocatori e' stato superato
+        //removeFromGiochiDisponibili(idGiocoCasuale);// Rimuove il gioco dalla lista degli ID disponibili se il massimo num di giocatori e' stato superato
         return idGiocoCasuale;
     }
 
@@ -221,6 +221,7 @@ contract Bingo {
     /**************************************************************** */
 
     function createGame(uint _maxJoiners, uint _betAmount) public payable {
+
         require(_maxJoiners > 0, "Max joiners must be greater than 0");
         require(_betAmount > 0, "Bet amount must be greater than 0");
 
@@ -240,9 +241,10 @@ contract Bingo {
         newGame.joinerMerkleRoots[msg.sender] = 0;
 
         elencoGiochiDisponibili.push(gameID);
+    
         newGame.ethBalance +=  _betAmount;
 
-        emit GameCreated(gameID);
+        emit GameCreated(gameID,newGame.maxJoiners,newGame.totalJoiners);
     }
 
 
@@ -250,7 +252,10 @@ function joinGame(uint256 _gameId) public {
     require(elencoGiochiDisponibili.length > 0, "No available games!");
     uint256 chosenGameId;
     if (_gameId == 0) {
-        chosenGameId = getRandomGame();
+        do {
+            chosenGameId = getRandomGame();
+        } while (gameList[chosenGameId].creator == msg.sender);
+        
     } else {
         chosenGameId = _gameId;
     }
@@ -263,10 +268,7 @@ function joinGame(uint256 _gameId) public {
     gameList[chosenGameId].joiners.push(msg.sender);
     gameList[chosenGameId].totalJoiners++;
     gameList[chosenGameId].ethBalance += gameList[chosenGameId].betAmount;
-    if(gameList[chosenGameId].totalJoiners == gameList[chosenGameId].maxJoiners){
-        removeFromGiochiDisponibili(chosenGameId);
-        emit GameStarted(chosenGameId);
-    }
+    
     emit GameJoined( 
             chosenGameId,
             gameList[chosenGameId].creator,
@@ -275,6 +277,10 @@ function joinGame(uint256 _gameId) public {
             gameList[chosenGameId].totalJoiners,
             gameList[chosenGameId].ethBalance
     );
+    if(gameList[chosenGameId].totalJoiners == gameList[chosenGameId].maxJoiners){
+        removeFromGiochiDisponibili(chosenGameId);
+        emit GameStarted(chosenGameId);
+    }
 }    
 
 function amountEthDecision(uint256 _gameId, bool _response) public payable {
