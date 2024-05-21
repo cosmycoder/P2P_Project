@@ -75,10 +75,26 @@ const JoinGame = ({ setView }) => {
               <Typography variant="h6">Max Joiners: {maxJoiners}</Typography>
               <Typography variant="h6">Total Joiners: {totalJoiners}</Typography>
               <div className="grid grid-cols-2 gap-4">
-                <Button variant="contained" onClick={joinGame} disabled={loading || gameId === "0"}>
-                  {loading ? 'Joining...' : 'Join Game'}
-                </Button>
-                <Button variant="outlined" onClick={() => setInfoFetched(false)}>Back</Button>
+              <Button
+							variant="contained"
+							onClick={joinGame}
+							className="dark:bg-blue-500 dark:hover:bg-blue-600 bg-blue-400
+							hover:bg-blue-500 text-white items-center shadow-xl
+							 transition duration-300 dark:disabled:bg-gray-500 disabled:bg-gray-300"
+							disabled={gameId.trim() === ""||loading || gameId === "0"}
+						  >
+							  {loading ? 'Joining...' : 'Join Game'}
+						  </Button>
+            
+              <Button
+						    className="dark:border-blue-500 dark:hover:border-blue-600
+						    dark:text-blue-500 dark:hover:text-blue-600
+						    border-blue-400 hover:border-blue-500
+						    text-blue-400 hover:text-blue-500
+						    items-center shadow-xl
+						    transition duration-300"
+						    variant="outlined" onClick={() => setInfoFetched(false)}>Torna indietro</Button>
+      
               </div>
             </div>
           )}
