@@ -22,6 +22,12 @@ const CreateRoom = ({setView}) => {
 	const createGame = () => {
 		const _maxPlayers = parseInt(maxPlayers);
 		const _ethBet = parseInt(ethBet);
+		// window.ethereum.on("GameStarted", () => {
+		// 	console.log("Game started")
+		// 	toast('Game started', {
+		// 		icon: 'ℹ️'
+		// 	});
+		// });
 		contract.methods.createGame(_maxPlayers, _ethBet).send({ from: accounts[0], gas: 1000000 }).then((logArray) => {
 			console.log(logArray)
 			setGameId(parseInt(logArray.events.GameCreated.returnValues._gameId));
@@ -32,12 +38,7 @@ const CreateRoom = ({setView}) => {
 			toast.error(`Error creating a game ${String(error)}`);
 		});
 		console.log(contract._events.allEvents())
-		window.ethereum.on("GameStarted", () => {
-			console.log("Game started")
-			toast('Game started', {
-				icon: 'ℹ️'
-			});
-		});
+		
 		// .then((event) => {
 		// 	console.log(event);
 		// }).catch((error) => {
@@ -56,7 +57,8 @@ const CreateRoom = ({setView}) => {
 					<Button 
 						className="dark:bg-blue-500 dark:hover:bg-blue-600 bg-blue-400
 								   hover:bg-blue-500 text-white items-center shadow-xl
-									transition duration-300" 
+									transition duration-300 dark:disabled:bg-gray-500 disabled:bg-gray-300" 
+						disabled={maxPlayers === "" || ethBet === ""}
 						variant="contained" 
 						onClick={() => {createGame()}}>
 							Scommetti
