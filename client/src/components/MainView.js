@@ -3,7 +3,7 @@ import { Button } from "@mui/material";
 import CreateRoom from "./CreateRoom";
 import JoinRandomGame from "./JoinRandomGame";
 import  { FaSun, FaMoon } from 'react-icons/fa'
-
+import JoinGame from "./JoinGame";
 const MainView = () => {
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [view, setView] = useState("")

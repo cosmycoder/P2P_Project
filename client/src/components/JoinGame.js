@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { Button, Typography, CircularProgress, TextField } from "@mui/material";
 import useEth from "../contexts/EthContext/useEth";
-
+import toast
+ from "react-hot-toast";
 const JoinGame = ({ setView }) => {
   const { state: { contract, accounts } } = useEth();
   const [gameId, setGameId] = useState("");
@@ -12,6 +13,7 @@ const JoinGame = ({ setView }) => {
   const [loading, setLoading] = useState(false);
   const [waitingForPlayers, setWaitingForPlayers] = useState(false);
   const [error, setError] = useState("");
+  const re = /^[0-9\b]+$/;
 
   const joinGame = () => {
     setLoading(true);
@@ -24,7 +26,9 @@ const JoinGame = ({ setView }) => {
       .catch((error) => {
         console.error("Error joining game:", error);
         setLoading(false);
-      });
+        toast.error("Non posso entrare nel gioco selezionato!")
+        setGameId("")
+    });
   };
 
   const getInfoGame = () => {
@@ -41,7 +45,9 @@ const JoinGame = ({ setView }) => {
       .catch((error) => {
         console.error("Error fetching game info:", error);
         setLoading(false);
-      });
+        toast.error("Non trovo il gioco selezionato!")
+        setGameId("")
+    });
   };
 
   return (
@@ -55,33 +61,48 @@ const JoinGame = ({ setView }) => {
         <div className="grid grid-cols-1 gap-4">
           {!infoFetched ? (
             <div className="grid grid-cols-1 gap-4">
-              <TextField
+
+              <input
                 value={gameId}
+                placeholder="Game ID"
+                className="text-field"
                 onChange={(e) => {
-                  setError("");
+                //   setError("");
+                if (e.target.value === "" || re.test(e.target.value))
                   setGameId(e.target.value);
                 }}
                 id="outlined-basic"
                 label="Game ID"
-                variant="outlined"
-                error={!!error}
-                helperText={error}
+                // variant="outlined"
+                // error={!!error}
+                // helperText={error}
               />
-              <Button 
-                variant="contained" 
-                onClick={getInfoGame} 
+              <Button
+                variant="contained"
+                className="dark:bg-blue-500 dark:hover:bg-blue-600 bg-blue-400
+								   hover:bg-blue-500 text-white items-center shadow-xl
+									transition duration-300 dark:disabled:bg-gray-500 disabled:bg-gray-300"
+                onClick={getInfoGame}
                 disabled={loading || gameId.trim() === "" || gameId === "0"}
               >
                 {loading ? 'Loading...' : 'Fetch Game Info'}
               </Button>
-              <Button variant="outlined" onClick={() => setView("")}>Back</Button>
+              <Button
+              variant="outlined"
+              className="dark:border-blue-500 dark:hover:border-blue-600
+                            dark:text-blue-500 dark:hover:text-blue-600
+                            border-blue-400 hover:border-blue-500
+                            text-blue-400 hover:text-blue-500
+                            items-center shadow-xl
+                            transition duration-300"
+              onClick={() => setView("")}>Back</Button>
             </div>
           ) : (
             <div>
-              <Typography variant="h6">Game ID: {gameId}</Typography>
-              <Typography variant="h6">ETH Bet: {ethBet}</Typography>
-              <Typography variant="h6">Max Joiners: {maxJoiners}</Typography>
-              <Typography variant="h6">Total Joiners: {totalJoiners}</Typography>
+              <Typography className="text-black dark:text-white" variant="h6">Game ID: {gameId}</Typography>
+              <Typography className="text-black dark:text-white" variant="h6">ETH Bet: {ethBet}</Typography>
+              <Typography className="text-black dark:text-white" variant="h6">Max Joiners: {maxJoiners}</Typography>
+              <Typography className="text-black dark:text-white" variant="h6">Total Joiners: {totalJoiners}</Typography>
               <div className="grid grid-cols-2 gap-4">
                 <Button
                   variant="contained"
