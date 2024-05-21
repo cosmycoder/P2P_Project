@@ -323,6 +323,5 @@ function amountEthDecision(uint256 _gameId, bool _response) public payable {
             game.joinerMerkleRoots[sender] = _merkleRoot;
         }
     }
-    
-
+  
 }

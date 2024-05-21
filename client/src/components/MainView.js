@@ -1,12 +1,17 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@mui/material"; 
 import CreateRoom from "./CreateRoom";
 import JoinRandomGame from "./JoinRandomGame";
 import  { FaSun, FaMoon } from 'react-icons/fa'
 
 const MainView = () => {
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(true);
   const [view, setView] = useState("")
+
+  useEffect(() => {
+	document.documentElement.classList.add('dark');
+
+  }, []);
 	return(
 		<div>
 			 <div className="w-1/2 m-auto h-12 mt-7 rounded-lg dark:bg-blue-500 bg-blue-300 shadow-lg flex justify-center items-center">
@@ -42,7 +47,7 @@ const MainView = () => {
 					onClick={
 						() => {
 							setIsDarkMode(true);
-							document.documentElement.classList.add('dark');
+  							document.documentElement.classList.add('dark');
 						}}><FaMoon className="m-auto" size="20"/></button>
 					}
 				</div>

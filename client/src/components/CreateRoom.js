@@ -1,7 +1,8 @@
-import { Button, TextField, CircularProgress } from "@mui/material"; 
+import { Button, CircularProgress, iconButtonClasses } from "@mui/material"; 
 import useEth from "../contexts/EthContext/useEth";
 import { useState } from "react";
 import Board from "./Board";
+import toast from "react-hot-toast";
 
 const CreateRoom = ({setView}) => {
 	const mockTable = [
@@ -13,8 +14,8 @@ const CreateRoom = ({setView}) => {
 	]
 	
 	const { state: { contract, accounts } } = useEth();
-	const [maxPlayers, setMaxPlayers] = useState();
-	const [ethBet, setEthBet] = useState();
+	const [maxPlayers, setMaxPlayers] = useState("");
+	const [ethBet, setEthBet] = useState("");
 	const [gameId, setGameId] = useState();
 	const [waiting, setWaiting] = useState(false)
 	const re = /^[0-9\b]+$/;
@@ -22,9 +23,26 @@ const CreateRoom = ({setView}) => {
 		const _maxPlayers = parseInt(maxPlayers);
 		const _ethBet = parseInt(ethBet);
 		contract.methods.createGame(_maxPlayers, _ethBet).send({ from: accounts[0], gas: 1000000 }).then((logArray) => {
+			console.log(logArray)
 			setGameId(parseInt(logArray.events.GameCreated.returnValues._gameId));
+			setWaiting(true);
+			toast.success("Gioco creato con successo!");
+		}).catch((error) => {
+			console.log(error);
+			toast.error(`Error creating a game ${String(error)}`);
 		});
-		setWaiting(true);
+		console.log(contract._events.allEvents())
+		window.ethereum.on("GameStarted", () => {
+			console.log("Game started")
+			toast('Game started', {
+				icon: 'ℹ️'
+			});
+		});
+		// .then((event) => {
+		// 	console.log(event);
+		// }).catch((error) => {
+		// 	toast.error(`Error waiting for the game to start ${String(error)}`)
+		// });
 		// contract.methods.joinGame(gameId).send({ from: accounts[0], gas: 1000000 }).then((logArray) => {
 		// 	// handle more logic to print board
 		// });

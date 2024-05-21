@@ -1,6 +1,6 @@
 import { Button } from "@mui/material"; 
 import useEth from "../contexts/EthContext/useEth";
-
+import toast from "react-hot-toast";
 
 const JoinRandomGame = ({setView}) => {
 	const { state: { contract, accounts } } = useEth();
@@ -9,6 +9,14 @@ const JoinRandomGame = ({setView}) => {
 		contract.methods.joinGame(0).send({ from: accounts[0], gas: 20000000 }).then((logArray) => {
 			console.log(parseInt(logArray.events.GameJoined.returnValues._gameId));
 			//console.log(parseInt(logArray.events.GameJoined.returnValues._totalJoiners));
+		}).catch((error) => {
+			if(String(error).includes("Transaction has been reverted by the EVM")) {
+
+				toast.error("Error joining a random game, transaction reverted!");
+				console.log(error);
+			} else {
+				toast.error("Errore sconosciuto!");
+			}
 		});
 	}
 
