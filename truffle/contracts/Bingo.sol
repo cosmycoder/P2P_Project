@@ -42,6 +42,12 @@ contract Bingo {
         uint256 _totalJoiners,
         uint256 _ethAmount
     );
+    event GetInfo(
+        uint256 indexed _gameId,
+        uint256 _maxjoiners,
+        uint256 _totalJoiners,
+        uint256 _ethAmount
+    );
     event Checkvalue(
         uint256 indexed _gameId,
         address _address,
@@ -89,6 +95,23 @@ contract Bingo {
         return gameList[_gameId];
     }
 
+    function getInfoGame(uint256 _gameid) public{
+        // Verifica se ci sono giochi disponibili
+        require(_gameid >= 0, "Game id is negative!");
+        if(_gameid == 0){
+            uint256 gameID = getRandomGame();
+            require(gameID != 0, "No available games!");
+            emit GetInfo(gameID, gameList[gameID].maxJoiners, gameList[gameID].totalJoiners, gameList[gameID].betAmount);
+            return;
+        }else{
+            if(findIndex(_gameid) > elencoGiochiDisponibili.length){
+                revert("Reverted because game is not available!");
+            }
+            emit GetInfo(_gameid, gameList[_gameid].maxJoiners, gameList[_gameid].totalJoiners, gameList[_gameid].betAmount);
+            return;
+        }
+    }
+
 
     function getRandomNumber(uint256 _max) private view returns (uint256) {
        require(_max > 0, "Max must be greater than 0");
@@ -98,7 +121,7 @@ contract Bingo {
         return (randomHash % _max);
     }
 
-    function getRandomGame() private returns (uint256 idGiocoCasuale) {
+    function getRandomGame() private view returns (uint256 idGiocoCasuale) {
         // Verifica se ci sono giochi disponibili
         if (elencoGiochiDisponibili.length == 0) {
             return 0;
