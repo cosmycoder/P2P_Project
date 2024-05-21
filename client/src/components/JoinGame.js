@@ -42,11 +42,21 @@ const JoinGame = ({ setView }) => {
 						<Button 
 							variant="contained" 
 							onClick={joinGame}
+							className="dark:bg-blue-500 dark:hover:bg-blue-600 bg-blue-400
+							hover:bg-blue-500 text-white items-center shadow-xl
+							 transition duration-300 dark:disabled:bg-gray-500 disabled:bg-gray-300"
 							disabled={gameId.trim() === ""}
 						>
 							Unisciti
 						</Button>
-						<Button variant="outlined" onClick={() => setView("")}>Torna indietro</Button>
+						<Button 
+						className="dark:border-blue-500 dark:hover:border-blue-600
+						dark:text-blue-500 dark:hover:text-blue-600
+						border-blue-400 hover:border-blue-500
+						text-blue-400 hover:text-blue-500
+						 items-center shadow-xl 
+						transition duration-300"
+						variant="outlined" onClick={() => setView("")}>Torna indietro</Button>
 					</div>
 				</div>
 			) : (
