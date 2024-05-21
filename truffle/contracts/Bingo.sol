@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT 
+// SPDX-License-Identifier: MIT
 pragma solidity >=0.4.22 <0.9.0;
 
 contract Bingo {
@@ -37,7 +37,7 @@ contract Bingo {
     event GameJoined(
         uint256 indexed _gameId,
         address _creator,
-        address _joiner, 
+        address _joiner,
         uint256 _maxjoiners,
         uint256 _totalJoiners,
         uint256 _ethAmount
@@ -50,7 +50,7 @@ contract Bingo {
     );
     event GameStarted(
         uint256 indexed _gameId
-            
+
     );
     event GameCancelled(uint256 indexed _gameId);
     //event to communicate the end of a game to all the joiners and the creator, loser is used if reason is that he cheated
@@ -74,9 +74,9 @@ contract Bingo {
     );
 
     constructor() {
-        
+
     }
-    
+
     /*********************************************** */
     /**               GETTERS                       **/
     /*********************************************** */
@@ -111,7 +111,7 @@ contract Bingo {
 
     function getJoinerMerkleRoots(uint256 _gameId) public view returns (bytes32[] memory) {
         uint256 joinerCount = gameList[_gameId].joiners.length;
-        bytes32[] memory merkleRoots = new bytes32[](joinerCount);        
+        bytes32[] memory merkleRoots = new bytes32[](joinerCount);
         for (uint256 i = 0; i < joinerCount; i++) {
             address joiner = gameList[_gameId].joiners[i];
             merkleRoots[i] = gameList[_gameId].joinerMerkleRoots[joiner];
@@ -148,7 +148,7 @@ contract Bingo {
                 // Rimuove l'ultimo elemento
                 elencoGiochiDisponibili.pop();
                 return true;
-            
+
         }
         return false;
     }
@@ -211,7 +211,7 @@ contract Bingo {
                 // Rimuove l'ultimo elemento
                 elencoGiochiDisponibili.pop();
                 return true;
-            
+
         }
         return false;
     }
@@ -236,12 +236,12 @@ contract Bingo {
         newGame.creatorMerkleRoot = 0;
         newGame.accusationTime = 0;
         newGame.accuser = address(0);
-        
+
         // Initialize the creator's merkle root mapping
         newGame.joinerMerkleRoots[msg.sender] = 0;
 
         elencoGiochiDisponibili.push(gameID);
-    
+
         newGame.ethBalance +=  _betAmount;
 
         emit GameCreated(gameID,newGame.maxJoiners,newGame.totalJoiners);
@@ -255,7 +255,7 @@ function joinGame(uint256 _gameId) public {
         do {
             chosenGameId = getRandomGame();
         } while (gameList[chosenGameId].creator == msg.sender);
-        
+
     } else {
         chosenGameId = _gameId;
     }
@@ -268,8 +268,8 @@ function joinGame(uint256 _gameId) public {
     gameList[chosenGameId].joiners.push(msg.sender);
     gameList[chosenGameId].totalJoiners++;
     gameList[chosenGameId].ethBalance += gameList[chosenGameId].betAmount;
-    
-    emit GameJoined( 
+
+    emit GameJoined(
             chosenGameId,
             gameList[chosenGameId].creator,
             msg.sender,
@@ -281,11 +281,11 @@ function joinGame(uint256 _gameId) public {
         removeFromGiochiDisponibili(chosenGameId);
         emit GameStarted(chosenGameId);
     }
-}    
+}
 
 function amountEthDecision(uint256 _gameId, bool _response) public payable {
     require(_gameId > 0, "Game id is negative!");
-    address sender = msg.sender;        
+    address sender = msg.sender;
     require(gameList[_gameId].creator == sender || contains(gameList[_gameId].joiners, sender),
             "Player not in that game!"
     );
@@ -323,6 +323,5 @@ function amountEthDecision(uint256 _gameId, bool _response) public payable {
             game.joinerMerkleRoots[sender] = _merkleRoot;
         }
     }
-    
 
 }
