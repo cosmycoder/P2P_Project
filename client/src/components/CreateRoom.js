@@ -1,4 +1,4 @@
-import { Button, CircularProgress, iconButtonClasses } from "@mui/material"; 
+import { Button, CircularProgress, iconButtonClasses } from "@mui/material";
 import useEth from "../contexts/EthContext/useEth";
 import { useState } from "react";
 import Board from "./Board";
@@ -12,7 +12,7 @@ const CreateRoom = ({setView}) => {
 		[73, 17, 88, 36, 25],
 		[47, 59, 3, 80, 66]
 	]
-	
+
 	const { state: { contract, accounts } } = useEth();
 	const [maxPlayers, setMaxPlayers] = useState("");
 	const [ethBet, setEthBet] = useState("");
@@ -38,7 +38,7 @@ const CreateRoom = ({setView}) => {
 			toast.error(`Error creating a game ${String(error)}`);
 		});
 		console.log(contract._events.allEvents())
-		
+
 		// .then((event) => {
 		// 	console.log(event);
 		// }).catch((error) => {
@@ -54,24 +54,24 @@ const CreateRoom = ({setView}) => {
 				<input placeholder="Massimo numero di giocatori" className="text-field" value={maxPlayers} onChange={(e) => {if (e.target.value === "" || re.test(e.target.value)) setMaxPlayers(e.target.value)}} id="outlined-basic" label="Massimo numero di giocatori" variant="outlined" />
 				<input placeholder="ETH da scommettere" className="text-field" value={ethBet} onChange={(e) => {if (e.target.value === "" || re.test(e.target.value)) setEthBet(e.target.value)}} id="outlined-basic" label="ETH da scommettere" variant="outlined" />
 				<div  className="grid grid-cols-2 gap-4">
-					<Button 
+					<Button
 						className="dark:bg-blue-500 dark:hover:bg-blue-600 bg-blue-400
 								   hover:bg-blue-500 text-white items-center shadow-xl
-									transition duration-300 dark:disabled:bg-gray-500 disabled:bg-gray-300" 
+									transition duration-300 dark:disabled:bg-gray-500 disabled:bg-gray-300"
 						disabled={maxPlayers === "" || ethBet === ""}
-						variant="contained" 
+						variant="contained"
 						onClick={() => {createGame()}}>
 							Scommetti
 					</Button>
-					
-					<Button 
+
+					<Button
 						className="dark:border-blue-500 dark:hover:border-blue-600
 									dark:text-blue-500 dark:hover:text-blue-600
 									border-blue-400 hover:border-blue-500
 									text-blue-400 hover:text-blue-500
-									 items-center shadow-xl 
-									transition duration-300" 
-						variant="outlined" 
+									 items-center shadow-xl
+									transition duration-300"
+						variant="outlined"
 						onClick={() => {setView("")}}>
 							Torna indietro
 					</Button>

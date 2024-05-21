@@ -13,14 +13,14 @@ function EthProvider({ children, setAuth }) {
         const web3 = new Web3(Web3.givenProvider || "ws://127.0.0.1:7545");
 
         try {
-          accounts = await window.ethereum.request({ method: 'eth_requestAccounts' }); 
+          accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
         } catch {}
         if (!accounts) {
           toast("Please authenticate into your MetaMask account", {icon: '🔐'});
           setAuth(false);
         } else {
           setAuth(true);
-        } 
+        }
         const networkID = await web3.eth.net.getId();
         const { abi } = artifact;
         let address, contract;
@@ -55,17 +55,17 @@ function EthProvider({ children, setAuth }) {
   useEffect(() => {
     const events = ["chainChanged", "accountsChanged"];
     const handleChange = (accounts) => {
-      init(state.artifact);  
+      init(state.artifact);
       if (!accounts || accounts.length === 0) {
         toast("Please authenticate into your MetaMask account", {icon: '🔐'});
         setAuth(false);
       } else {
         setAuth(true);
-      } 
+      }
     };
 
     events.forEach(e => window.ethereum.on(e, handleChange));
-    
+
     return () => {
       events.forEach(e => window.ethereum.removeListener(e, handleChange));
     };

@@ -39,8 +39,8 @@ const JoinGame = ({ setView }) => {
 						helperText={error}
 					/>
 					<div className="grid grid-cols-2 gap-4">
-						<Button 
-							variant="contained" 
+						<Button
+							variant="contained"
 							onClick={joinGame}
 							className="dark:bg-blue-500 dark:hover:bg-blue-600 bg-blue-400
 							hover:bg-blue-500 text-white items-center shadow-xl
@@ -49,12 +49,12 @@ const JoinGame = ({ setView }) => {
 						>
 							Unisciti
 						</Button>
-						<Button 
+						<Button
 						className="dark:border-blue-500 dark:hover:border-blue-600
 						dark:text-blue-500 dark:hover:text-blue-600
 						border-blue-400 hover:border-blue-500
 						text-blue-400 hover:text-blue-500
-						 items-center shadow-xl 
+						 items-center shadow-xl
 						transition duration-300"
 						variant="outlined" onClick={() => setView("")}>Torna indietro</Button>
 					</div>

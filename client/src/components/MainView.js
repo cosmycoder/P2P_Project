@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button } from "@mui/material"; 
+import { Button } from "@mui/material";
 import CreateRoom from "./CreateRoom";
 import JoinRandomGame from "./JoinRandomGame";
 import  { FaSun, FaMoon } from 'react-icons/fa'
@@ -35,7 +35,7 @@ const MainView = () => {
 				<div className="flex justify-center items-center">
 					{
 					isDarkMode ?
-					<button 
+					<button
 					className="theme-btn"
 					onClick={
 						() => {
@@ -53,7 +53,7 @@ const MainView = () => {
 				</div>
 			</div>
 		  </div>
-		
+
 		} {view === "createRoom" && (
 			<div className="flex justify-center items-center h-screen">
 			  <CreateRoom setView={setView} />
@@ -69,10 +69,10 @@ const MainView = () => {
 			  <JoinGame setView={setView} />
 			</div>
 		  )}
-		
+
 		</div>
 		)
-		
+
 };
 
 export default MainView;

@@ -5,7 +5,7 @@ const Board = ({size, table}) => {
 	}
 	return (
 		<>
-	
+
 		<div className="flex flex-col gap-1 mb-5 mt-24">
 			{rows}
 		</div>
@@ -40,7 +40,7 @@ const Tile = ({number}) => {
 	// 	switch(s) {
 	// 		case '':
 	// 			return "not-in-word";
-	// 		case '?': 
+	// 		case '?':
 	// 			return "not-in-place";
 	// 		case '+':
 	// 			return "correct";
@@ -51,6 +51,6 @@ const Tile = ({number}) => {
 	return (
 		<div className={"h-12 w-12 border flex m-0 dark:text-white text-black dark:border-gray-50 border-gray-700 rounded-md"}><div className="m-auto">{number}</div></div>
 	);
-} 
+}
 
 export default Board;

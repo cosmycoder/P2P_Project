@@ -11,7 +11,7 @@ module.exports = {
     develop: {
       port: 7545
     }
-  }, 
+  },
   compilers: {
     solc: {
       version: "0.7.3"
