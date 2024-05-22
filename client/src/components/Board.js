@@ -49,7 +49,7 @@ const Tile = ({number}) => {
 	// 	}
 	// }
 	return (
-		<div className={"h-12 w-12 border flex m-0 dark:text-white text-black dark:border-gray-50 border-gray-700 rounded-md"}><div className="m-auto">{number}</div></div>
+		<div className={"h-20 w-20 border flex m-0 dark:text-white text-black dark:border-gray-50 border-gray-700 rounded-md"}><div className="text-3xl m-auto">{number}</div></div>
 	);
 }
 

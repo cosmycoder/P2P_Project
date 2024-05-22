@@ -65,7 +65,7 @@ function EthProvider({ children, setAuth }) {
     };
 
     events.forEach(e => window.ethereum.on(e, handleChange));
-
+    window.ethereum.on("GameCreated", () => {console.log("GameCreated")})
     return () => {
       events.forEach(e => window.ethereum.removeListener(e, handleChange));
     };

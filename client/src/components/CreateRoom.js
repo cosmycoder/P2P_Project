@@ -1,6 +1,6 @@
 import { Button, CircularProgress, iconButtonClasses } from "@mui/material";
 import useEth from "../contexts/EthContext/useEth";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Board from "./Board";
 import toast from "react-hot-toast";
 
@@ -8,7 +8,7 @@ const CreateRoom = ({setView}) => {
 	const mockTable = [
 		[67, 24, 45, 82, 13],
 		[91, 56, 78, 33, 42],
-		[10, 99, 61, 29, 54],
+		[10, 99, "🆓", 29, 54],
 		[73, 17, 88, 36, 25],
 		[47, 59, 3, 80, 66]
 	]
@@ -17,12 +17,13 @@ const CreateRoom = ({setView}) => {
 	const [maxPlayers, setMaxPlayers] = useState("");
 	const [ethBet, setEthBet] = useState("");
 	const [gameId, setGameId] = useState();
-	const [waiting, setWaiting] = useState(false)
+	const [waiting, setWaiting] = useState(false);
+    const [gameStarted, setGameStarted] = useState(false);
 	const re = /^[0-9\b]+$/;
 	const createGame = () => {
 		const _maxPlayers = parseInt(maxPlayers);
 		const _ethBet = parseInt(ethBet);
-		// window.ethereum.on("GameStarted", () => {
+		// window.ethereum.on("GameCreated", () => {
 		// 	console.log("Game started")
 		// 	toast('Game started', {
 		// 		icon: 'ℹ️'
@@ -37,9 +38,13 @@ const CreateRoom = ({setView}) => {
 			console.log(error);
 			toast.error(`Error creating a game ${String(error)}`);
 		});
-		console.log(contract._events.allEvents())
 
-		// .then((event) => {
+		contract._events.allEvents((evt, err) => {
+            console.log(evt, err)
+        })
+		// console.log(contract.events.GameStarted())
+
+		// contract.events.GameStarted().then((event) => {
 		// 	console.log(event);
 		// }).catch((error) => {
 		// 	toast.error(`Error waiting for the game to start ${String(error)}`)
@@ -48,6 +53,15 @@ const CreateRoom = ({setView}) => {
 		// 	// handle more logic to print board
 		// });
 	}
+    useEffect(() => {
+        try {
+            contract._events.GameStarted().on('data', event => {
+                // console.log('Event received:', event);
+                // console.log(event.returnValues);
+                setGameStarted(true)
+            }).on('error', console.error);
+        } catch {}
+    }, [contract]);
 	return (
 		<div className="flex justify-center items-center h-screen">
 			{!waiting ? (<div className="grid grid-rows-2 gap-4">
@@ -77,13 +91,14 @@ const CreateRoom = ({setView}) => {
 					</Button>
 
 				</div>
-			</div>) :
-			(
+			</div>) : !gameStarted ? (
 				<div className="grid grid-rows-2 gap-4">
 					<h1 className="text-center text-2xl text-black dark:text-white">{`Stanza numero ${gameId}`}</h1>
 					<h1 className="text-center text-2xl text-black dark:text-white">{"Aspetto che altri giocatori si connettano!"}</h1>
 					<CircularProgress className="m-auto"/>
 				</div>
+			) : (
+                <Board size={5} table={mockTable}/>
 			)
 			// 	... <Board size={5} table={mockTable}/>
 		}
