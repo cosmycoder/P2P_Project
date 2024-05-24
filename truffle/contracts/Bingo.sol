@@ -6,19 +6,19 @@ contract Bingo {
 /**           Struct containing all the info for a game                      **/
 /**************************************************************************** */
 
-struct info {
-    address creator;
-    address[] joiners;
-    uint maxJoiners;
-    uint totalJoiners;
-    uint ethBalance;
-    uint betAmount;
-    bytes32 creatorMerkleRoot;
-    mapping(address => bytes32) joinerMerkleRoots; // Updated to a mapping
-    mapping(address => bytes32) joinersCardHashes;
-    uint accusationTime;
-    address accuser;
-}
+    struct info {
+        address creator;
+        address[] joiners;
+        uint maxJoiners;
+        uint totalJoiners;
+        uint ethBalance;
+        uint betAmount;
+        bytes32 creatorMerkleRoot;
+        mapping(address => bytes32) joinerMerkleRoots; // Updated to a mapping
+        mapping(address => bytes32) joinersCardHashes;
+        uint accusationTime;
+        address accuser;
+    }
 /************************************************ */
 /**            Global variables                  **/
 /************************************************ */
@@ -317,60 +317,61 @@ struct info {
     }
 
 
-function joinGame(uint256 _gameId) public {
-    require(elencoGiochiDisponibili.length > 0, "No available games!");
-    uint256 chosenGameId;
-    if (_gameId == 0) {
-        do {
-            chosenGameId = getRandomGame();
-        } while (gameList[chosenGameId].creator == msg.sender);
+    function joinGame(uint256 _gameId) public {
+        require(elencoGiochiDisponibili.length > 0, "No available games!");
+        uint256 chosenGameId;
+        if (_gameId == 0) {
+            do {
+                chosenGameId = getRandomGame();
+            } while (gameList[chosenGameId].creator == msg.sender);
 
-    } else {
-        chosenGameId = _gameId;
-    }
-    //check if the game is available and if the player is not the creator
-    require(chosenGameId > 0, "Chosen id negative!");
-    require(gameList[chosenGameId].totalJoiners < gameList[chosenGameId].maxJoiners, "Game already taken!");
-    require(gameList[chosenGameId].creator != msg.sender, "You can't join a game created by yourself!");
-
-    //add the player to the game
-    gameList[chosenGameId].joiners.push(msg.sender);
-    gameList[chosenGameId].totalJoiners++;
-    gameList[chosenGameId].ethBalance += gameList[chosenGameId].betAmount;
-
-    emit GameJoined(
-            chosenGameId,
-            gameList[chosenGameId].creator,
-            msg.sender,
-            gameList[chosenGameId].maxJoiners,
-            gameList[chosenGameId].totalJoiners,
-            gameList[chosenGameId].ethBalance
-    );
-    if(gameList[chosenGameId].totalJoiners == gameList[chosenGameId].maxJoiners){
-        removeFromGiochiDisponibili(chosenGameId);
-        emit GameStarted(chosenGameId);
-    }
-}
-
-function amountEthDecision(uint256 _gameId, bool _response) public payable {
-    require(_gameId > 0, "Game id is negative!");
-    address sender = msg.sender;
-    require(gameList[_gameId].creator == sender || contains(gameList[_gameId].joiners, sender),
-            "Player not in that game!"
-    );
-
-    if (!_response) {
-        require(gameList[_gameId].creator != sender, "Creator cannot refuse their own game!");
-        remove(gameList[_gameId].joiners,sender);
-        elencoGiochiDisponibili.push(_gameId);
-            //emith the amount eth refused
-        emit AmountEthResponse(sender, gameList[_gameId].betAmount, _gameId, 0);
         } else {
-            require(msg.value == gameList[_gameId].ethBalance, "ETH amount is wrong!");
-            gameList[_gameId].betAmount += msg.value;
-            //emit the amount eth accepted
-            emit AmountEthResponse(sender, gameList[_gameId].ethBalance, _gameId, 1);
+            chosenGameId = _gameId;
         }
+        //check if the game is available and if the player is not the creator
+        require(chosenGameId > 0, "Chosen id negative!");
+        require(gameList[chosenGameId].totalJoiners < gameList[chosenGameId].maxJoiners, "Game already taken!");
+        require(gameList[chosenGameId].creator != msg.sender, "You can't join a game created by yourself!");
+
+        //add the player to the game
+        gameList[chosenGameId].joiners.push(msg.sender);
+        gameList[chosenGameId].totalJoiners++;
+        gameList[chosenGameId].ethBalance += gameList[chosenGameId].betAmount;
+
+        emit GameJoined(
+                chosenGameId,
+                gameList[chosenGameId].creator,
+                msg.sender,
+                gameList[chosenGameId].maxJoiners,
+                gameList[chosenGameId].totalJoiners,
+                gameList[chosenGameId].ethBalance
+        );
+        if(gameList[chosenGameId].totalJoiners == gameList[chosenGameId].maxJoiners){
+            removeFromGiochiDisponibili(chosenGameId);
+            emit GameStarted(chosenGameId);
+        }
+    }
+
+
+    function amountEthDecision(uint256 _gameId, bool _response) public payable {
+        require(_gameId > 0, "Game id is negative!");
+        address sender = msg.sender;
+        require(gameList[_gameId].creator == sender || contains(gameList[_gameId].joiners, sender),
+                "Player not in that game!"
+        );
+
+        if (!_response) {
+            require(gameList[_gameId].creator != sender, "Creator cannot refuse their own game!");
+            remove(gameList[_gameId].joiners,sender);
+            elencoGiochiDisponibili.push(_gameId);
+                //emith the amount eth refused
+            emit AmountEthResponse(sender, gameList[_gameId].betAmount, _gameId, 0);
+            } else {
+                require(msg.value == gameList[_gameId].ethBalance, "ETH amount is wrong!");
+                gameList[_gameId].betAmount += msg.value;
+                //emit the amount eth accepted
+                emit AmountEthResponse(sender, gameList[_gameId].ethBalance, _gameId, 1);
+            }
     }
 
     function submitBoard(uint256 _gameId, bytes32 _merkleRoot) public {
