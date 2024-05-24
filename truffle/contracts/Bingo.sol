@@ -19,12 +19,30 @@ contract Bingo {
         uint accusationTime;
         address accuser;
     }
+    // enum Cols {
+    //     FIRST_COL,
+    //     SECOND_COL,
+    //     THIRD_COL,
+    //     FOURTH_COL,
+    //     FIFTH_COL
+    // }
 /************************************************ */
 /**            Global variables                  **/
 /************************************************ */
     uint256 public gameId = 0; // Game ID counter
     mapping(uint256 => info) public gameList; // Mapping of game ID to game info
     uint256[] public elencoGiochiDisponibili;    // List of available game IDs
+    // mapping(uint8 => Cols) private COLS;
+    // uint8[] private _FIRST_COL   = [0, 5, 10, 14, 19];
+    // uint8[] private _SECOND_COL  = [1, 6, 11, 15, 20];
+    // uint8[] private _THIRD_COL   = [2, 7, 16, 21];
+    // uint8[] private _FOURTH_COL  = [3, 8, 12, 17, 22];
+    // uint8[] private _FIFTH_COL   = [4, 9, 13, 18, 23];
+
+
+
+
+
 
 
 
@@ -82,7 +100,18 @@ contract Bingo {
     );
 
     constructor() {
+        /** Code used for the verification of the table
+        for (uint i = 0; i < 5; i++) {
+            COLS[_FIRST_COL[i]]  = Cols.FIRST_COL;
+            COLS[_SECOND_COL[i]] = Cols.SECOND_COL;
+            COLS[_THIRD_COL[i]]  = Cols.THIRD_COL;
+            COLS[_FIFTH_COL[i]]  = Cols.FIFTH_COL;
+            if (i < 4) {
+                COLS[_FOURTH_COL[i]] = Cols.FOURTH_COL;
 
+            }
+        }
+        */
     }
 
     /*********************************************** */
@@ -149,19 +178,20 @@ contract Bingo {
 /************************************************ */
     function verifyMerkleProof(
         bytes32 _root,
-        uint256[] memory _leafData,
-        bytes32[] memory _proof
+        bytes32  _leaf,
+        bytes32[] memory _proof,
+        uint _index
     ) internal pure returns (bool) {
-        bytes32 computedHash = keccak256(abi.encodePacked(_leafData[0]));
+        bytes32 _hash = _leaf;
         for (uint256 i = 0; i < _proof.length; i++) {
-            bytes32 proofElement = _proof[i];
-            if (_leafData[i++] < uint256(computedHash)) {
-                computedHash = keccak256(abi.encodePacked(proofElement, computedHash));
+            if (_index % 2 == 0) {
+                _hash = keccak256(abi.encodePacked(_hash, _proof[i]));
             } else {
-                computedHash = keccak256(abi.encodePacked(computedHash, proofElement));
+                _hash = keccak256(abi.encodePacked(_proof[i], _hash));
             }
+            _index /= 2;
         }
-        return computedHash == _root;
+        return _hash == _root;
     }
 
     function remove(uint256 _gameId) public  returns (bool) {
@@ -241,28 +271,27 @@ contract Bingo {
         return false;
     }
 
+    /** This code has been implemented to perform a table check. It should be implemented in a proper backend not to burn a huge amount of gas
     function uint8ToBytes32(uint8 _value) public pure returns (bytes32 result) {
         assembly {
             mstore(result, shl(248, _value)) // Shift left by 248 to pad with zeros
         }
     }
 
-    function computeCardHash(uint8[5][5] memory card) internal pure returns (bytes32) {
-        bytes memory cardBytes = new bytes(5 * 5 * 32);
+    function computeCardHash(uint8[24] memory card) internal pure returns (bytes32) {
+        bytes memory cardBytes = new bytes(24 * 32);
         uint8 pos = 0;
-        for (uint256 i = 0; i < 5; i++) {
-            for (uint256 j = 0; j < 5; j++) {
-                bytes32 elementBytes = uint8ToBytes32(card[i][j]); // uint to bytes
-                for (uint256 k = 0; k < 32; k++) {
-                    cardBytes[pos] = elementBytes[k];
-                    pos++;
-                }
+        for (uint256 i = 0; i < 24; i++) {
+            bytes32 elementBytes = uint8ToBytes32(card[i]); // uint to bytes
+            for (uint256 k = 0; k < 32; k++) {
+                cardBytes[pos] = elementBytes[k];
+                pos++;
             }
         }
         return keccak256(cardBytes);
     }
 
-    function isCardValid(uint256 _gameId, uint8[5][5] memory card) internal view returns (bool, bytes32) {
+    function isCardValid(uint256 _gameId, uint8[24] memory card) internal view returns (bool, bytes32) {
         bool[75] memory numberSeen;
         bytes32 _cardHash = 0;
         _cardHash = computeCardHash(card);
@@ -270,13 +299,22 @@ contract Bingo {
             if (
                 gameList[_gameId].joinersCardHashes[gameList[_gameId].joiners[i]] != 0 &&
                 gameList[_gameId].joinersCardHashes[gameList[_gameId].joiners[i]] != _cardHash) {
-                for (uint8 j = 0; j < 5; j++) {
-                    for (uint8 k = 0; k < 5; k++) {
-                        if (numberSeen[card[j][k]]) {
-                            return (false, bytes32(0));
-                        }
-                        numberSeen[card[j][k]] = true;
+                for (uint8 j = 0; j < 24; j++) {
+                    if (COLS[j] == Cols.FIRST_COL && (card[j] < 1 || card[j] > 15)) {
+                        return (false, bytes32(0));
+                    } else if (COLS[j] == Cols.SECOND_COL && (card[j] < 16 || card[j] > 30)) {
+                        return (false, bytes32(0));
+                    } else if (COLS[j] == Cols.THIRD_COL && (card[j] < 31 || card[j] > 45)) {
+                        return (false, bytes32(0));
+                    } else if (COLS[j] == Cols.FOURTH_COL && (card[j] < 61 || card[j] > 75)) {
+                        return (false, bytes32(0));
+                    } else if (COLS[j] == Cols.FIFTH_COL && (card[j] < 46 || card[j] > 60)) {
+                        return (false, bytes32(0));
                     }
+                    if (numberSeen[card[j]-1]) {
+                        return (false, bytes32(0));
+                    }
+                    numberSeen[card[j]-1] = true;
                 }
             } else if (gameList[_gameId].joinersCardHashes[gameList[_gameId].joiners[i]] == _cardHash) {
                 return (false, bytes32(0));
@@ -285,6 +323,7 @@ contract Bingo {
         return (true, _cardHash);
     }
 
+    */
     /**************************************************************** */
     /**       Functions to handle main logic of game                 **/
     /**************************************************************** */
@@ -374,7 +413,7 @@ contract Bingo {
             }
     }
 
-    function submitBoard(uint256 _gameId, bytes32 _merkleRoot) public {
+    function submitCard(uint256 _gameId, bytes32 _merkleRoot) public {
         require(_gameId > 0, "Game id is negative!");
         info storage game = gameList[_gameId];
         address sender = msg.sender;
@@ -385,7 +424,7 @@ contract Bingo {
         require(
             (game.creator == sender && game.creatorMerkleRoot == 0) ||
             (contains(gameList[_gameId].joiners, sender) && game.joinerMerkleRoots[sender] == 0),
-            "Board already submitted!"
+            "Card already submitted!"
         );
         if (game.creator == sender) {
             game.creatorMerkleRoot = _merkleRoot;

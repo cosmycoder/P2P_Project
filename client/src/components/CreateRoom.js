@@ -3,6 +3,7 @@ import useEth from "../contexts/EthContext/useEth";
 import { useEffect, useState } from "react";
 import Board from "./Board";
 import toast from "react-hot-toast";
+import { generateMerkleTree, generateTable, getMatrix } from "../services/TableService";
 
 const CreateRoom = ({setView}) => {
 	const mockTable = [
@@ -38,10 +39,12 @@ const CreateRoom = ({setView}) => {
 			console.log(error);
 			toast.error(`Error creating a game ${String(error)}`);
 		});
-
-		contract._events.allEvents((evt, err) => {
-            console.log(evt, err)
-        })
+        let table = generateTable();
+        console.log(getMatrix(table))
+        console.log(generateMerkleTree(table))
+		// contract._events.allEvents((evt, err) => {
+        //     console.log(evt, err)
+        // })
 		// console.log(contract.events.GameStarted())
 
 		// contract.events.GameStarted().then((event) => {
