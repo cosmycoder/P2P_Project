@@ -5,7 +5,8 @@ contract Bingo {
 /**************************************************************************** */
 /**           Struct containing all the info for a game                      **/
 /**************************************************************************** */
-    struct info {
+
+struct info {
     address creator;
     address[] joiners;
     uint maxJoiners;
@@ -14,6 +15,7 @@ contract Bingo {
     uint betAmount;
     bytes32 creatorMerkleRoot;
     mapping(address => bytes32) joinerMerkleRoots; // Updated to a mapping
+    mapping(address => bytes32) joinersCardHashes;
     uint accusationTime;
     address accuser;
 }
@@ -237,6 +239,50 @@ contract Bingo {
 
         }
         return false;
+    }
+
+    function uint8ToBytes32(uint8 _value) public pure returns (bytes32 result) {
+        assembly {
+            mstore(result, shl(248, _value)) // Shift left by 248 to pad with zeros
+        }
+    }
+
+    function computeCardHash(uint8[5][5] memory card) internal pure returns (bytes32) {
+        bytes memory cardBytes = new bytes(5 * 5 * 32);
+        uint8 pos = 0;
+        for (uint256 i = 0; i < 5; i++) {
+            for (uint256 j = 0; j < 5; j++) {
+                bytes32 elementBytes = uint8ToBytes32(card[i][j]); // uint to bytes
+                for (uint256 k = 0; k < 32; k++) {
+                    cardBytes[pos] = elementBytes[k];
+                    pos++;
+                }
+            }
+        }
+        return keccak256(cardBytes);
+    }
+
+    function isCardValid(uint256 _gameId, uint8[5][5] memory card) internal view returns (bool, bytes32) {
+        bool[75] memory numberSeen;
+        bytes32 _cardHash = 0;
+        _cardHash = computeCardHash(card);
+        for (uint i = 0; i < gameList[_gameId].joiners.length; i++) {
+            if (
+                gameList[_gameId].joinersCardHashes[gameList[_gameId].joiners[i]] != 0 &&
+                gameList[_gameId].joinersCardHashes[gameList[_gameId].joiners[i]] != _cardHash) {
+                for (uint8 j = 0; j < 5; j++) {
+                    for (uint8 k = 0; k < 5; k++) {
+                        if (numberSeen[card[j][k]]) {
+                            return (false, bytes32(0));
+                        }
+                        numberSeen[card[j][k]] = true;
+                    }
+                }
+            } else if (gameList[_gameId].joinersCardHashes[gameList[_gameId].joiners[i]] == _cardHash) {
+                return (false, bytes32(0));
+            }
+        }
+        return (true, _cardHash);
     }
 
     /**************************************************************** */
