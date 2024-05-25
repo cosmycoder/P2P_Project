@@ -5,7 +5,7 @@ function getRandom(min, max) {
 }
 
 
-export function generateTable() {
+export function generateCard() {
     let numbers = [];
     let occurrences = {};
     let number = 0;

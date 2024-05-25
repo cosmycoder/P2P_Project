@@ -3,6 +3,8 @@ import { Button, Typography, CircularProgress, TextField } from "@mui/material";
 import useEth from "../contexts/EthContext/useEth";
 import toast from "react-hot-toast";
 import Board from "./Board";
+import { generateMerkleTree, generateCard, getMatrix } from "../services/TableService";
+
 const JoinGame = ({ setView }) => {
   const mockTable = [
       [67, 24, 45, 82, 13],
@@ -21,11 +23,17 @@ const JoinGame = ({ setView }) => {
   const [waitingForPlayers, setWaitingForPlayers] = useState(false);
   const [error, setError] = useState("");
   const [gameStarted, setGameStarted] = useState(false);
+  const [card, setCard] = useState();
+  const [cardMatrix, setCardMatrix] = useState();
   const re = /^[0-9\b]+$/;
 
   const joinGame = () => {
     setLoading(true);
-    contract.methods.joinGame(parseInt(gameId)).send({ from: accounts[0], gas: 20000000 })
+    let _card = generateCard();
+    setCard(_card);
+    setCardMatrix(getMatrix(_card));
+    let merkleTree = generateMerkleTree(_card);
+    contract.methods.joinGame(parseInt(gameId), `0x${merkleTree[merkleTree.length - 1][0]}`).send({ from: accounts[0], gas: 20000000 })
       .then((logArray) => {
         console.log(parseInt(logArray.events.GameJoined.returnValues._gameId));
         setLoading(false);
@@ -143,7 +151,7 @@ const JoinGame = ({ setView }) => {
           )}
         </div>
       ) : (
-        <Board size={5} table={mockTable}/>
+        <Board size={5} table={cardMatrix}/>
     )}
     </div>
   );

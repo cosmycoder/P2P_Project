@@ -3,7 +3,7 @@ import useEth from "../contexts/EthContext/useEth";
 import { useEffect, useState } from "react";
 import Board from "./Board";
 import toast from "react-hot-toast";
-import { generateMerkleTree, generateTable, getMatrix } from "../services/TableService";
+import { generateMerkleTree, generateCard, getMatrix } from "../services/TableService";
 
 const CreateRoom = ({setView}) => {
 	const mockTable = [
@@ -20,6 +20,8 @@ const CreateRoom = ({setView}) => {
 	const [gameId, setGameId] = useState();
 	const [waiting, setWaiting] = useState(false);
     const [gameStarted, setGameStarted] = useState(false);
+    const [card, setCard] = useState();
+    const [cardMatrix, setCardMatrix] = useState();
 	const re = /^[0-9\b]+$/;
 	const createGame = () => {
 		const _maxPlayers = parseInt(maxPlayers);
@@ -30,7 +32,12 @@ const CreateRoom = ({setView}) => {
 		// 		icon: 'ℹ️'
 		// 	});
 		// });
-		contract.methods.createGame(_maxPlayers, _ethBet).send({ from: accounts[0], gas: 1000000 }).then((logArray) => {
+        let _card = generateCard();
+        setCard(_card);
+        setCardMatrix(getMatrix(_card));
+        let merkleTree = generateMerkleTree(_card);
+        console.log(merkleTree[merkleTree.length - 1][0]);
+		contract.methods.createGame(_maxPlayers, _ethBet, `0x${merkleTree[merkleTree.length - 1][0]}`).send({ from: accounts[0], gas: 1000000 }).then((logArray) => {
 			console.log(logArray)
 			setGameId(parseInt(logArray.events.GameCreated.returnValues._gameId));
 			setWaiting(true);
@@ -39,9 +46,7 @@ const CreateRoom = ({setView}) => {
 			console.log(error);
 			toast.error(`Error creating a game ${String(error)}`);
 		});
-        let table = generateTable();
-        console.log(getMatrix(table))
-        console.log(generateMerkleTree(table))
+
 		// contract._events.allEvents((evt, err) => {
         //     console.log(evt, err)
         // })
@@ -101,7 +106,7 @@ const CreateRoom = ({setView}) => {
 					<CircularProgress className="m-auto"/>
 				</div>
 			) : (
-                <Board size={5} table={mockTable}/>
+                <Board size={5} table={cardMatrix}/>
 			)
 			// 	... <Board size={5} table={mockTable}/>
 		}
