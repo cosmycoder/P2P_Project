@@ -372,7 +372,10 @@ contract Bingo {
         require(gameList[chosenGameId].creator != msg.sender, "You can't join a game created by yourself!");
         require(gameList[chosenGameId].creatorMerkleRoot != _cardMerkleRoot, "Invalid merkle root!");
         for (uint i = 0; i < gameList[chosenGameId].joiners.length; i++) {
-            require(gameList[chosenGameId].joinerMerkleRoots[gameList[chosenGameId].joiners[i]] != _cardMerkleRoot, "Invalid merkle root!");
+            require(
+                gameList[chosenGameId]
+                    .joinerMerkleRoots[gameList[chosenGameId]
+                    .joiners[i]] != _cardMerkleRoot, "Invalid merkle root!");
         }
         //add the player to the game
         gameList[chosenGameId].joiners.push(msg.sender);
