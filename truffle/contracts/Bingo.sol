@@ -15,7 +15,6 @@ contract Bingo {
         uint betAmount;
         bytes32 creatorMerkleRoot;
         mapping(address => bytes32) joinerMerkleRoots; // Updated to a mapping
-        mapping(address => bytes32) joinersCardHashes;
         uint accusationTime;
         address accuser;
     }
@@ -328,7 +327,7 @@ contract Bingo {
     /**       Functions to handle main logic of game                 **/
     /**************************************************************** */
 
-    function createGame(uint _maxJoiners, uint _betAmount) public payable {
+    function createGame(uint _maxJoiners, uint _betAmount, bytes32 _cardMerkleRoot) public payable {
 
         require(_maxJoiners > 0, "Max joiners must be greater than 0");
         require(_betAmount > 0, "Bet amount must be greater than 0");
@@ -341,7 +340,7 @@ contract Bingo {
         newGame.totalJoiners = 0;
         newGame.ethBalance = 0;
         newGame.betAmount = _betAmount;
-        newGame.creatorMerkleRoot = 0;
+        newGame.creatorMerkleRoot = _cardMerkleRoot;
         newGame.accusationTime = 0;
         newGame.accuser = address(0);
 
@@ -356,7 +355,7 @@ contract Bingo {
     }
 
 
-    function joinGame(uint256 _gameId) public {
+    function joinGame(uint256 _gameId, bytes32 _cardMerkleRoot) public {
         require(elencoGiochiDisponibili.length > 0, "No available games!");
         uint256 chosenGameId;
         if (_gameId == 0) {
@@ -371,19 +370,23 @@ contract Bingo {
         require(chosenGameId > 0, "Chosen id negative!");
         require(gameList[chosenGameId].totalJoiners < gameList[chosenGameId].maxJoiners, "Game already taken!");
         require(gameList[chosenGameId].creator != msg.sender, "You can't join a game created by yourself!");
-
+        require(gameList[chosenGameId].creatorMerkleRoot != _cardMerkleRoot, "Invalid merkle root!");
+        for (uint i = 0; i < gameList[chosenGameId].joiners.length; i++) {
+            require(gameList[chosenGameId].joinerMerkleRoots[gameList[chosenGameId].joiners[i]] != _cardMerkleRoot, "Invalid merkle root!");
+        }
         //add the player to the game
         gameList[chosenGameId].joiners.push(msg.sender);
         gameList[chosenGameId].totalJoiners++;
         gameList[chosenGameId].ethBalance += gameList[chosenGameId].betAmount;
+        gameList[chosenGameId].joinerMerkleRoots[msg.sender] = _cardMerkleRoot;
 
         emit GameJoined(
-                chosenGameId,
-                gameList[chosenGameId].creator,
-                msg.sender,
-                gameList[chosenGameId].maxJoiners,
-                gameList[chosenGameId].totalJoiners,
-                gameList[chosenGameId].ethBalance
+            chosenGameId,
+            gameList[chosenGameId].creator,
+            msg.sender,
+            gameList[chosenGameId].maxJoiners,
+            gameList[chosenGameId].totalJoiners,
+            gameList[chosenGameId].ethBalance
         );
         if(gameList[chosenGameId].totalJoiners == gameList[chosenGameId].maxJoiners){
             removeFromGiochiDisponibili(chosenGameId);
@@ -413,24 +416,24 @@ contract Bingo {
             }
     }
 
-    function submitCard(uint256 _gameId, bytes32 _merkleRoot) public {
-        require(_gameId > 0, "Game id is negative!");
-        info storage game = gameList[_gameId];
-        address sender = msg.sender;
-        require(
-            gameList[_gameId].creator == sender || contains(gameList[_gameId].joiners, sender),
-            "Player not in that game!"
-        );
-        require(
-            (game.creator == sender && game.creatorMerkleRoot == 0) ||
-            (contains(gameList[_gameId].joiners, sender) && game.joinerMerkleRoots[sender] == 0),
-            "Card already submitted!"
-        );
-        if (game.creator == sender) {
-            game.creatorMerkleRoot = _merkleRoot;
-        } else {
-            game.joinerMerkleRoots[sender] = _merkleRoot;
-        }
-    }
+    // function submitCard(uint256 _gameId, bytes32 _merkleRoot) public {
+    //     require(_gameId > 0, "Game id is negative!");
+    //     info storage game = gameList[_gameId];
+    //     address sender = msg.sender;
+    //     require(
+    //         gameList[_gameId].creator == sender || contains(gameList[_gameId].joiners, sender),
+    //         "Player not in that game!"
+    //     );
+    //     require(
+    //         (game.creator == sender && game.creatorMerkleRoot == 0) ||
+    //         (contains(gameList[_gameId].joiners, sender) && game.joinerMerkleRoots[sender] == 0),
+    //         "Card already submitted!"
+    //     );
+    //     if (game.creator == sender) {
+    //         game.creatorMerkleRoot = _merkleRoot;
+    //     } else {
+    //         game.joinerMerkleRoots[sender] = _merkleRoot;
+    //     }
+    // }
 
 }
