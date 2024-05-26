@@ -4,14 +4,14 @@ import { useEffect, useState } from "react";
 import Board from "./Board";
 import toast from "react-hot-toast";
 import { generateMerkleTree, generateCard, getMatrix } from "../services/TableService";
-
+import { isWinningCombination } from "../globals";
 const CreateRoom = ({setView}) => {
 	const mockTable = [
-		[67, 24, 45, 82, 13],
-		[91, 56, 78, 33, 42],
-		[10, 99, "🆓", 29, 54],
-		[73, 17, 88, 36, 25],
-		[47, 59, 3, 80, 66]
+		[0, 1, 2, 3, 4],
+		[5, 6, 7, 8, 9],
+		[10, 11, "🆓", 12, 13],
+		[14, 15, 16, 17, 18],
+		[19, 20, 21, 22, 23]
 	]
 
 	const { state: { contract, accounts } } = useEth();
@@ -22,7 +22,9 @@ const CreateRoom = ({setView}) => {
     const [gameStarted, setGameStarted] = useState(false);
     const [card, setCard] = useState();
     const [cardMatrix, setCardMatrix] = useState();
-	const re = /^[0-9\b]+$/;
+	const [result, setResult] = useState()
+    const re = /^[0-9\b]+$/;
+
 	const createGame = () => {
 		const _maxPlayers = parseInt(maxPlayers);
 		const _ethBet = parseInt(ethBet);
@@ -46,7 +48,8 @@ const CreateRoom = ({setView}) => {
 			console.log(error);
 			toast.error(`Error creating a game ${String(error)}`);
 		});
-
+        setWaiting(false)
+        setGameStarted(true)
 		// contract._events.allEvents((evt, err) => {
         //     console.log(evt, err)
         // })
@@ -70,6 +73,12 @@ const CreateRoom = ({setView}) => {
             }).on('error', console.error);
         } catch {}
     }, [contract]);
+    useEffect(() => {
+        console.log(result)
+        if (result && isWinningCombination(result)) {
+            console.log("Bingo!");
+        }
+    }, [result]);
 	return (
 		<div className="flex justify-center items-center h-screen">
 			{!waiting ? (<div className="grid grid-rows-2 gap-4">
@@ -106,7 +115,8 @@ const CreateRoom = ({setView}) => {
 					<CircularProgress className="m-auto"/>
 				</div>
 			) : (
-                <Board size={5} table={cardMatrix}/>
+                <Board size={5} table={cardMatrix} setResult={setResult}/>
+                // <Board size={5} table={mockTable} setResult={setResult}/>
 			)
 			// 	... <Board size={5} table={mockTable}/>
 		}

@@ -5,8 +5,9 @@
 body {
   @apply dark:bg-slate-700 bg-slate-50 overflow-hidden
 }
+
 .tile {
-  @apply 
+  @apply
   w-40 h-40 dark:text-white text-black
   dark:bg-blue-500 dark:hover:bg-blue-600 bg-blue-200 hover:bg-blue-300
   rounded-md p-4 flex text-center items-center transition duration-300 shadow-lg
@@ -19,10 +20,14 @@ body {
 }
 
 .text-field {
-  @apply bg-inherit p-3 rounded-md border-2 focus:outline-none 
+  @apply bg-inherit p-3 rounded-md focus:outline-none
   focus:border-blue-400 border-[1px]
   text-black border-black
   dark:text-white dark:border-white
   transition duration-200
+}
+
+.selected-number {
+    @apply dark:!bg-emerald-500 !bg-emerald-300 hover:dark:!bg-emerald-600 hover:!bg-emerald-400
 }
 

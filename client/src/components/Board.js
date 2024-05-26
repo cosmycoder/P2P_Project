@@ -1,32 +1,32 @@
-const Board = ({size, table}) => {
+import { useEffect } from "react";
+const result = new Array(24).fill(false);
+
+
+const Board = ({size, table, setResult}) => {
 	const rows = [];
+
+    const handleClick = () => {
+        const newResult = [...result]; // create a new instance to make the useffect trigger on the parent component
+        setResult(newResult);
+    }
+
 	for (let i = 0; i < size; i++) {
-		rows.push(<Row key={i.toString()} className="flex" size={size} rowNums={table[i]}/>)
+		rows.push(<Row key={i.toString()} index={i} className="flex" size={size} handleTileClick={handleClick} rowNums={table[i]}/>)
 	}
 	return (
-		<>
-
-		<div className="flex flex-col gap-1 mb-5 mt-24">
-			{rows}
-		</div>
-
-		{/* <form className="flex flex-col justify-evenly items-center max-w-full w-full" onSubmit={onSubmit}>
-			<div>
-				<input placeholder='Indovina la parola' type="text" className='font-mono text-md w-96 p-2 bg-gray-200 text-primary rounded-md outline-none transition duration-150 ease-in-out shadow-2xl' name="word" value={word} onChange={e => onChange(e)} />
-			</div>
-			<div>
-				<input type="submit" className="btn-standard mt-4 items-center rounded-2xl bg-sky-200 hover:bg-sky-400 dark:text-white dark:bg-sky-800 p-3 pr-5 pl-5 hover:dark:bg-sky-900 hover:text-white" value="Invia" />
-			</div>
-			</form> */}
-		</>
+        <div className="flex flex-col gap-1 mb-5 mt-24">
+            {rows}
+        </div>
 	);
 
 }
 
-const Row = ({size, rowNums}) => {
+const Row = ({size, rowNums, index, handleTileClick}) => {
 	const items = [];
+    let idx;
 	for (let i = 0; i < size; i++) {
-        items.push(<Tile key={i.toString()} className="flex" number={rowNums[i]}/>)
+        idx = index*5 + i
+        items.push(<Tile key={i.toString()} className="flex" index={idx} handleTileClick={handleTileClick} number={rowNums[i]}/>)
     }
 	return (
 	<div className="flex flex-row gap-1">
@@ -35,21 +35,38 @@ const Row = ({size, rowNums}) => {
 
 }
 
-const Tile = ({number}) => {
-	// const getBgColor = (s) => {
-	// 	switch(s) {
-	// 		case '':
-	// 			return "not-in-word";
-	// 		case '?':
-	// 			return "not-in-place";
-	// 		case '+':
-	// 			return "correct";
-	// 		default:
-	// 			return "not-in-word"
-	// 	}
-	// }
+const Tile = ({number, handleTileClick, index}) => {
 	return (
-		<div className={"h-20 w-20 border flex m-0 dark:text-white text-black dark:border-gray-50 border-gray-700 rounded-md"}><div className="text-3xl m-auto">{number}</div></div>
+		<button
+            className="h-20 w-20
+                       border dark:text-white
+                       text-black dark:border-gray-50
+                       border-gray-700 rounded-md text-3xl m-auto
+                       hover:dark:bg-slate-800 hover:bg-slate-200"
+            onClick={(event) => {
+                let state;
+                if (event.target.classList.contains("selected-number")) {
+                    event.target.classList.remove("selected-number")
+                    state = false;
+
+                }
+                else {
+                    event.target.classList.add("selected-number")
+                    state = true;
+                }
+                if (index === 12) return;
+                else if (index < 12) {
+                    result[index] = state;
+                } else {
+                    result[index-1] = state;
+                }
+                handleTileClick(result);
+
+            }}
+
+        >
+                {number}
+        </button>
 	);
 }
 
