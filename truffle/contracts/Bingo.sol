@@ -398,26 +398,26 @@ contract Bingo {
     }
 
 
-    function amountEthDecision(uint256 _gameId, bool _response) public payable {
-        require(_gameId > 0, "Game id is negative!");
-        address sender = msg.sender;
-        require(gameList[_gameId].creator == sender || contains(gameList[_gameId].joiners, sender),
-                "Player not in that game!"
-        );
+    // function amountEthDecision(uint256 _gameId, bool _response) public payable {
+    //     require(_gameId > 0, "Game id is negative!");
+    //     address sender = msg.sender;
+    //     require(gameList[_gameId].creator == sender || contains(gameList[_gameId].joiners, sender),
+    //             "Player not in that game!"
+    //     );
 
-        if (!_response) {
-            require(gameList[_gameId].creator != sender, "Creator cannot refuse their own game!");
-            remove(gameList[_gameId].joiners,sender);
-            elencoGiochiDisponibili.push(_gameId);
-                //emith the amount eth refused
-            emit AmountEthResponse(sender, gameList[_gameId].betAmount, _gameId, 0);
-            } else {
-                require(msg.value == gameList[_gameId].ethBalance, "ETH amount is wrong!");
-                gameList[_gameId].betAmount += msg.value;
-                //emit the amount eth accepted
-                emit AmountEthResponse(sender, gameList[_gameId].ethBalance, _gameId, 1);
-            }
-    }
+    //     if (!_response) {
+    //         require(gameList[_gameId].creator != sender, "Creator cannot refuse their own game!");
+    //         remove(gameList[_gameId].joiners,sender);
+    //         elencoGiochiDisponibili.push(_gameId);
+    //             //emith the amount eth refused
+    //         emit AmountEthResponse(sender, gameList[_gameId].betAmount, _gameId, 0);
+    //         } else {
+    //             require(msg.value == gameList[_gameId].ethBalance, "ETH amount is wrong!");
+    //             gameList[_gameId].betAmount += msg.value;
+    //             //emit the amount eth accepted
+    //             emit AmountEthResponse(sender, gameList[_gameId].ethBalance, _gameId, 1);
+    //         }
+    // }
 
     // function submitCard(uint256 _gameId, bytes32 _merkleRoot) public {
     //     require(_gameId > 0, "Game id is negative!");

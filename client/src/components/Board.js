@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import Delayed from "./Delayed";
 const result = new Array(24).fill(false);
 
 
@@ -14,9 +14,11 @@ const Board = ({size, table, setResult}) => {
 		rows.push(<Row key={i.toString()} index={i} className="flex" size={size} handleTileClick={handleClick} rowNums={table[i]}/>)
 	}
 	return (
-        <div className="flex flex-col gap-1 mb-5 mt-24">
-            {rows}
-        </div>
+        <Delayed loadingMessage={"Sto creado la tua cartella!"} waitBeforeShow={1500}>
+            <div className="flex flex-col gap-1 mb-5 mt-24">
+                {rows}
+            </div>
+        </Delayed>
 	);
 
 }
