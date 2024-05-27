@@ -48,8 +48,8 @@ const CreateRoom = ({setView}) => {
 			console.log(error);
 			toast.error(`Error creating a game ${String(error)}`);
 		});
-        setWaiting(false)
-        setGameStarted(true)
+        // setWaiting(false)
+        // setGameStarted(true)
 		// contract._events.allEvents((evt, err) => {
         //     console.log(evt, err)
         // })
