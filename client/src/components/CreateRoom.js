@@ -48,8 +48,8 @@ const CreateRoom = ({setView}) => {
 			console.log(error);
 			toast.error(`Error creating a game ${String(error)}`);
 		});
-        setWaiting(false)
-        setGameStarted(true)
+        // setWaiting(false)
+        // setGameStarted(true)
 		// contract._events.allEvents((evt, err) => {
         //     console.log(evt, err)
         // })
@@ -64,6 +64,7 @@ const CreateRoom = ({setView}) => {
 		// 	// handle more logic to print board
 		// });
 	}
+
     useEffect(() => {
         try {
             contract._events.GameStarted().on('data', event => {
@@ -73,10 +74,12 @@ const CreateRoom = ({setView}) => {
             }).on('error', console.error);
         } catch {}
     }, [contract]);
+
     useEffect(() => {
         console.log(result)
         if (result && isWinningCombination(result)) {
             console.log("Bingo!");
+            toast("Bingo!", {icon: '🥳'});
         }
     }, [result]);
 	return (
