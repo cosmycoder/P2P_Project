@@ -1,9 +1,18 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button, Typography, CircularProgress, TextField } from "@mui/material";
 import useEth from "../contexts/EthContext/useEth";
-import toast
- from "react-hot-toast";
+import toast from "react-hot-toast";
+import Board from "./Board";
+import { generateMerkleTree, generateCard, getMatrix } from "../services/TableService";
+
 const JoinGame = ({ setView }) => {
+  const mockTable = [
+      [67, 24, 45, 82, 13],
+      [91, 56, 78, 33, 42],
+      [10, 99, "🆓", 29, 54],
+      [73, 17, 88, 36, 25],
+      [47, 59, 3, 80, 66]
+  ]
   const { state: { contract, accounts } } = useEth();
   const [gameId, setGameId] = useState("");
   const [ethBet, setEthBet] = useState(0);
@@ -13,11 +22,18 @@ const JoinGame = ({ setView }) => {
   const [loading, setLoading] = useState(false);
   const [waitingForPlayers, setWaitingForPlayers] = useState(false);
   const [error, setError] = useState("");
+  const [gameStarted, setGameStarted] = useState(false);
+  const [card, setCard] = useState();
+  const [cardMatrix, setCardMatrix] = useState();
   const re = /^[0-9\b]+$/;
 
   const joinGame = () => {
     setLoading(true);
-    contract.methods.joinGame(parseInt(gameId)).send({ from: accounts[0], gas: 20000000 })
+    let _card = generateCard();
+    setCard(_card);
+    setCardMatrix(getMatrix(_card));
+    let merkleTree = generateMerkleTree(_card);
+    contract.methods.joinGame(parseInt(gameId), `0x${merkleTree[merkleTree.length - 1][0]}`).send({ from: accounts[0], gas: 20000000 })
       .then((logArray) => {
         console.log(parseInt(logArray.events.GameJoined.returnValues._gameId));
         setLoading(false);
@@ -30,6 +46,7 @@ const JoinGame = ({ setView }) => {
         setGameId("")
     });
   };
+
 
   const getInfoGame = () => {
     setLoading(true);
@@ -50,9 +67,19 @@ const JoinGame = ({ setView }) => {
     });
   };
 
+  useEffect(() => {
+    try {
+      contract._events.GameStarted().on('data', event => {
+          // console.log('Event received:', event);
+          // console.log(event.returnValues);
+          setGameStarted(true)
+      }).on('error', console.error);
+    } catch {}
+  }, [contract]);
+
   return (
     <div className="flex justify-center items-center h-screen">
-      {waitingForPlayers ? (
+      {!gameStarted ? waitingForPlayers ? (
         <div className="grid grid-rows-2 gap-4">
           <h1 className="text-center text-2xl text-white">Aspetto che altri giocatori si connettano!</h1>
           <CircularProgress className="m-auto" />
@@ -80,8 +107,8 @@ const JoinGame = ({ setView }) => {
               <Button
                 variant="contained"
                 className="dark:bg-blue-500 dark:hover:bg-blue-600 bg-blue-400
-								   hover:bg-blue-500 text-white items-center shadow-xl
-									transition duration-300 dark:disabled:bg-gray-500 disabled:bg-gray-300"
+                                   hover:bg-blue-500 text-white items-center shadow-xl
+                                    transition duration-300 dark:disabled:bg-gray-500 disabled:bg-gray-300"
                 onClick={getInfoGame}
                 disabled={loading || gameId.trim() === "" || gameId === "0"}
               >
@@ -123,7 +150,9 @@ const JoinGame = ({ setView }) => {
             </div>
           )}
         </div>
-      )}
+      ) : (
+        <Board size={5} table={cardMatrix}/>
+    )}
     </div>
   );
 };

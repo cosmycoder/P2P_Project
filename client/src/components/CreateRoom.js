@@ -1,34 +1,45 @@
 import { Button, CircularProgress, iconButtonClasses } from "@mui/material";
 import useEth from "../contexts/EthContext/useEth";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Board from "./Board";
 import toast from "react-hot-toast";
-
+import { generateMerkleTree, generateCard, getMatrix } from "../services/TableService";
+import { isWinningCombination } from "../globals";
 const CreateRoom = ({setView}) => {
 	const mockTable = [
-		[67, 24, 45, 82, 13],
-		[91, 56, 78, 33, 42],
-		[10, 99, 61, 29, 54],
-		[73, 17, 88, 36, 25],
-		[47, 59, 3, 80, 66]
+		[0, 1, 2, 3, 4],
+		[5, 6, 7, 8, 9],
+		[10, 11, "🆓", 12, 13],
+		[14, 15, 16, 17, 18],
+		[19, 20, 21, 22, 23]
 	]
 
 	const { state: { contract, accounts } } = useEth();
 	const [maxPlayers, setMaxPlayers] = useState("");
 	const [ethBet, setEthBet] = useState("");
 	const [gameId, setGameId] = useState();
-	const [waiting, setWaiting] = useState(false)
-	const re = /^[0-9\b]+$/;
+	const [waiting, setWaiting] = useState(false);
+    const [gameStarted, setGameStarted] = useState(false);
+    const [card, setCard] = useState();
+    const [cardMatrix, setCardMatrix] = useState();
+	const [result, setResult] = useState()
+    const re = /^[0-9\b]+$/;
+
 	const createGame = () => {
 		const _maxPlayers = parseInt(maxPlayers);
 		const _ethBet = parseInt(ethBet);
-		// window.ethereum.on("GameStarted", () => {
+		// window.ethereum.on("GameCreated", () => {
 		// 	console.log("Game started")
 		// 	toast('Game started', {
 		// 		icon: 'ℹ️'
 		// 	});
 		// });
-		contract.methods.createGame(_maxPlayers, _ethBet).send({ from: accounts[0], gas: 1000000 }).then((logArray) => {
+        let _card = generateCard();
+        setCard(_card);
+        setCardMatrix(getMatrix(_card));
+        let merkleTree = generateMerkleTree(_card);
+        console.log(merkleTree[merkleTree.length - 1][0]);
+		contract.methods.createGame(_maxPlayers, _ethBet, `0x${merkleTree[merkleTree.length - 1][0]}`).send({ from: accounts[0], gas: 1000000 }).then((logArray) => {
 			console.log(logArray)
 			setGameId(parseInt(logArray.events.GameCreated.returnValues._gameId));
 			setWaiting(true);
@@ -37,9 +48,14 @@ const CreateRoom = ({setView}) => {
 			console.log(error);
 			toast.error(`Error creating a game ${String(error)}`);
 		});
-		console.log(contract._events.allEvents())
+        // setWaiting(false)
+        // setGameStarted(true)
+		// contract._events.allEvents((evt, err) => {
+        //     console.log(evt, err)
+        // })
+		// console.log(contract.events.GameStarted())
 
-		// .then((event) => {
+		// contract.events.GameStarted().then((event) => {
 		// 	console.log(event);
 		// }).catch((error) => {
 		// 	toast.error(`Error waiting for the game to start ${String(error)}`)
@@ -48,6 +64,24 @@ const CreateRoom = ({setView}) => {
 		// 	// handle more logic to print board
 		// });
 	}
+
+    useEffect(() => {
+        try {
+            contract._events.GameStarted().on('data', event => {
+                // console.log('Event received:', event);
+                // console.log(event.returnValues);
+                setGameStarted(true)
+            }).on('error', console.error);
+        } catch {}
+    }, [contract]);
+
+    useEffect(() => {
+        console.log(result)
+        if (result && isWinningCombination(result)) {
+            console.log("Bingo!");
+            toast("Bingo!", {icon: '🥳'});
+        }
+    }, [result]);
 	return (
 		<div className="flex justify-center items-center h-screen">
 			{!waiting ? (<div className="grid grid-rows-2 gap-4">
@@ -77,13 +111,15 @@ const CreateRoom = ({setView}) => {
 					</Button>
 
 				</div>
-			</div>) :
-			(
+			</div>) : !gameStarted ? (
 				<div className="grid grid-rows-2 gap-4">
 					<h1 className="text-center text-2xl text-black dark:text-white">{`Stanza numero ${gameId}`}</h1>
 					<h1 className="text-center text-2xl text-black dark:text-white">{"Aspetto che altri giocatori si connettano!"}</h1>
 					<CircularProgress className="m-auto"/>
 				</div>
+			) : (
+                <Board size={5} table={cardMatrix} setResult={setResult}/>
+                // <Board size={5} table={mockTable} setResult={setResult}/>
 			)
 			// 	... <Board size={5} table={mockTable}/>
 		}
