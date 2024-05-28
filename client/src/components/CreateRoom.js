@@ -22,7 +22,9 @@ const CreateRoom = ({setView}) => {
     const [gameStarted, setGameStarted] = useState(false);
     const [card, setCard] = useState();
     const [cardMatrix, setCardMatrix] = useState();
-	const [result, setResult] = useState()
+	const [result, setResult] = useState();
+    const [canExtract, setCanExtract] = useState(true);
+    const [extractedNumbers, setExtractedNumbers] = useState([])
     const re = /^[0-9\b]+$/;
 
 	const createGame = () => {
@@ -65,6 +67,19 @@ const CreateRoom = ({setView}) => {
 		// });
 	}
 
+    const extractNumber = () => {
+        contract.methods.extractNumber(gameId).send({ from: accounts[0], gas: 1000000 }).then((logArray) => {
+            setExtractedNumbers([...extractedNumbers, logArray.events.NumberExtracted.returnValues.number])
+		}).catch((error) => {
+			console.log(error);
+			toast.error(`Non sono riuscito a estrarre un nuovo numero ${String(error)}`);
+		});
+        setCanExtract(false);
+        setTimeout(() => {
+            setCanExtract(true);
+          }, 2000);
+    };
+
     useEffect(() => {
         try {
             contract._events.GameStarted().on('data', event => {
@@ -83,7 +98,10 @@ const CreateRoom = ({setView}) => {
         }
     }, [result]);
 	return (
-		<div className="flex justify-center items-center h-screen">
+        <div className="flex flex-col">
+        {gameStarted && <h1 className="flex text-black dark:text-white text-center text-2xl">{`Numeri estratti: ${extractedNumbers}`}</h1>}
+
+		<div className="flex justify-center items-center">
 			{!waiting ? (<div className="grid grid-rows-2 gap-4">
 				<input placeholder="Massimo numero di giocatori" className="text-field" value={maxPlayers} onChange={(e) => {if (e.target.value === "" || re.test(e.target.value)) setMaxPlayers(e.target.value)}} id="outlined-basic" label="Massimo numero di giocatori" variant="outlined" />
 				<input placeholder="ETH da scommettere" className="text-field" value={ethBet} onChange={(e) => {if (e.target.value === "" || re.test(e.target.value)) setEthBet(e.target.value)}} id="outlined-basic" label="ETH da scommettere" variant="outlined" />
@@ -118,12 +136,35 @@ const CreateRoom = ({setView}) => {
 					<CircularProgress className="m-auto"/>
 				</div>
 			) : (
-                <Board size={5} table={cardMatrix} setResult={setResult}/>
+                <div className="flex flex-col gap-4">
+                    <Board size={5} table={cardMatrix} setResult={setResult}/>
+                    <div className="flex flex-row gap-10 items-center justify-center">
+                    <Button
+						className="dark:bg-blue-500 dark:hover:bg-blue-600 bg-blue-400
+								   hover:bg-blue-500 text-white items-center shadow-xl
+									transition duration-300 dark:disabled:bg-gray-500 disabled:bg-gray-300"
+						disabled={!canExtract}
+						variant="contained"
+						onClick={extractNumber}>
+							Estrai numero
+					</Button>
+
+					<Button
+						className="dark:bg-blue-500 dark:hover:bg-blue-600 bg-blue-400
+                        hover:bg-blue-500 text-white items-center shadow-xl
+                         transition duration-300 dark:disabled:bg-gray-500 disabled:bg-gray-300"
+						variant="outlined"
+						onClick={() => {/** Revoca accusa */}}>
+							Revoca accusa
+					</Button>
+                    </div>
+                </div>
                 // <Board size={5} table={mockTable} setResult={setResult}/>
 			)
 			// 	... <Board size={5} table={mockTable}/>
 		}
 		</div>
+        </div>
 	)
 }
 

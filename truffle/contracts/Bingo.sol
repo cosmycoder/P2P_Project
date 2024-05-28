@@ -15,6 +15,7 @@ contract Bingo {
         uint betAmount;
         bytes32 creatorMerkleRoot;
         mapping(address => bytes32) joinerMerkleRoots; // Updated to a mapping
+        uint8[] numbersExtracted;
         uint accusationTime;
         address accuser;
     }
@@ -73,10 +74,10 @@ contract Bingo {
         uint256 _row,
         uint256 _col
     );
-    event GameStarted(
-        uint256 indexed _gameId
+    event GameStarted(uint256 indexed _gameId);
 
-    );
+    event NumberExtracted(uint256 _gameId, uint8 number);
+
     event GameCancelled(uint256 indexed _gameId);
     //event to communicate the end of a game to all the joiners and the creator, loser is used if reason is that he cheated
     event GameEnded(
@@ -84,7 +85,7 @@ contract Bingo {
         address _winner,
         address _loser,
         uint256 _reason
-        );
+    );
 
     event ResolveAccuse(
         uint256 indexed _gameId,
@@ -395,6 +396,31 @@ contract Bingo {
             removeFromGiochiDisponibili(chosenGameId);
             emit GameStarted(chosenGameId);
         }
+    }
+
+    function isExtracted(uint8[] memory numbersList, uint8 newNumber) internal pure returns(bool) {
+        for (uint i = 0; i < numbersList.length; i++) {
+            if (numbersList[i] == newNumber) return true;
+        }
+        return false;
+    }
+
+    function getNewNumber(uint256 seed) internal view returns(uint8) {
+        uint256 randomHash = uint256(keccak256(abi.encodePacked(block.timestamp, block.difficulty, msg.sender, seed)));
+        uint256 randomNumber = (randomHash % 75) + 1;
+        return uint8(randomNumber);
+    }
+
+    function extractNumber(uint256 _gameId) public {
+        require(gameList[_gameId].numbersExtracted.length <= 75, "All numbers have been extracted!");
+        uint8 newNumber = getNewNumber(_gameId);
+        uint8 i = 1;
+        while (isExtracted(gameList[_gameId].numbersExtracted, newNumber)) {
+            newNumber = getNewNumber(_gameId+i);
+            i++;
+        }
+        gameList[_gameId].numbersExtracted.push(newNumber);
+        emit NumberExtracted(_gameId, newNumber);
     }
 
 

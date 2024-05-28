@@ -30,6 +30,7 @@ function EthProvider({ children, setAuth }) {
         } catch (err) {
           console.error(err);
         }
+
         dispatch({
           type: actions.init,
           data: { artifact, web3, accounts, networkID, contract }
@@ -65,7 +66,6 @@ function EthProvider({ children, setAuth }) {
     };
 
     events.forEach(e => window.ethereum.on(e, handleChange));
-    window.ethereum.on("GameCreated", () => {console.log("GameCreated")})
     return () => {
       events.forEach(e => window.ethereum.removeListener(e, handleChange));
     };
