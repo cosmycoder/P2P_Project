@@ -3,7 +3,8 @@ module.exports = {
   // for more about customizing your Truffle configuration!
   networks: {
     development: {
-      host: "127.0.0.1",
+      host: "ganache-cli",
+    //   host: "127.0.0.1",
       port: 7545,
       network_id: "*", // Match any network id
       gasLimit: 100000000000

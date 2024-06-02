@@ -1,0 +1,17 @@
+name: bingo-eth
+services:
+    bingo-client:
+        build: .
+        volumes:
+            - ./:/app
+        ports:
+            - 8080:80
+            - 3000:3000
+            - 1337:1337
+        depends_on:  [ ganache-cli ]
+
+    ganache-cli:
+        image: trufflesuite/ganache-cli:latest
+        ports:
+            - 7545:7545
+        command: -p 7545 -h 0.0.0.0 -i 1337 --accounts 5 -e 10000 --seed 69420
