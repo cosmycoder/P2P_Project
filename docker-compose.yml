@@ -4,6 +4,7 @@ services:
         build: .
         volumes:
             - ./:/app
+        # network_mode: host
         ports:
             - 8080:80
             - 3000:3000
@@ -12,6 +13,7 @@ services:
 
     ganache-cli:
         image: trufflesuite/ganache-cli:latest
+        # network_mode: host
         ports:
             - 7545:7545
         command: -p 7545 -h 0.0.0.0 -i 1337 --accounts 5 -e 10000 --seed 69420

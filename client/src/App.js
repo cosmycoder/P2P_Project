@@ -4,10 +4,8 @@ import MainView from './components/MainView';
 import { EthProvider } from './contexts/EthContext'
 import { Toaster } from 'react-hot-toast'
 import { CircularProgress } from "@mui/material";
-
 function App() {
   const [auth, setAuth] = useState(false);
-
   return (
     <>
     <Toaster

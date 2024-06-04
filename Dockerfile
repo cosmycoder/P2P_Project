@@ -7,6 +7,7 @@ RUN npm install web3 --global
 RUN npm install serve --global
 RUN npm install lite-server --global
 RUN npm install tailwindcss --global
+RUN npm install dotenv --global
 EXPOSE 22
 EXPOSE 1337
 EXPOSE 80
