@@ -33,7 +33,7 @@ const JoinGame = ({ setView }) => {
     setCard(_card);
     setCardMatrix(getMatrix(_card));
     let merkleTree = generateMerkleTree(_card);
-    contract.methods.joinGame(parseInt(gameId), `0x${merkleTree[merkleTree.length - 1][0]}`).send({ from: accounts[0], gas: 20000000 })
+    contract.methods.joinGame(parseInt(gameId), `0x${merkleTree[merkleTree.length - 1][0]}`).send({ from: accounts[0], gas: 20000000, gasPrice: 20000000000 })
       .then((logArray) => {
         console.log(parseInt(logArray.events.GameJoined.returnValues._gameId));
         setLoading(false);
@@ -50,7 +50,7 @@ const JoinGame = ({ setView }) => {
 
   const getInfoGame = () => {
     setLoading(true);
-    contract.methods.getInfoGame(parseInt(gameId)).send({ from: accounts[0], gas: 20000000 })
+    contract.methods.getInfoGame(parseInt(gameId)).send({ from: accounts[0], gas: 20000000, gasPrice: 20000000000 })
       .then((logArray) => {
         console.log(parseInt(logArray.events.GetInfo.returnValues._gameId));
         setEthBet(parseInt(logArray.events.GetInfo.returnValues._ethAmount));

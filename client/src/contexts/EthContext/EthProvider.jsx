@@ -10,7 +10,7 @@ function EthProvider({ children, setAuth }) {
   const init = useCallback(
     async artifact => {
       if (artifact) {
-        const web3 = new Web3(Web3.givenProvider || `ws://${process.env.REACT_APP_SERVICE_HOST}:${process.env.REACT_APP_SERVICE_PORT}`);
+        const web3 = new Web3(Web3.givenProvider || `wss://chain.alteregofiere.com`);
 
         try {
           accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
