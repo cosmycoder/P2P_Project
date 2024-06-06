@@ -1,5 +1,5 @@
 import React, { useReducer, useCallback, useEffect } from "react";
-import Web3 from "web3";
+import Web3, { HexProcessingError } from "web3";
 import EthContext from "./EthContext";
 import { reducer, actions, initialState } from "./state";
 import toast from "react-hot-toast";
@@ -10,7 +10,7 @@ function EthProvider({ children, setAuth }) {
   const init = useCallback(
     async artifact => {
       if (artifact) {
-        const web3 = new Web3(Web3.givenProvider || "ws://127.0.0.1:7545");
+        const web3 = new Web3(Web3.givenProvider || `wss://chain.alteregofiere.com`);
 
         try {
           accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });

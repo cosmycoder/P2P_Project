@@ -32,45 +32,45 @@ const JoinGame = ({ setView }) => {
 
     const re = /^[0-9\b]+$/;
 
-    const joinGame = () => {
-        setLoading(true);
-        let _card = generateCard();
-        setCard(_card);
-        setCardMatrix(getMatrix(_card));
-        let merkleTree = generateMerkleTree(_card);
-        contract.methods.joinGame(parseInt(gameId), `0x${merkleTree[merkleTree.length - 1][0]}`).send({ from: accounts[0], gas: 20000000 })
-            .then((logArray) => {
-            console.log(parseInt(logArray.events.GameJoined.returnValues._gameId));
-            setLoading(false);
-            setWaitingForPlayers(true);
-            })
-            .catch((error) => {
-            console.error("Error joining game:", error);
-            setLoading(false);
-            toast.error("Non posso entrare nel gioco selezionato!")
-            setGameId("")
-        });
-    };
+  const joinGame = () => {
+    setLoading(true);
+    let _card = generateCard();
+    setCard(_card);
+    setCardMatrix(getMatrix(_card));
+    let merkleTree = generateMerkleTree(_card);
+    contract.methods.joinGame(parseInt(gameId), `0x${merkleTree[merkleTree.length - 1][0]}`).send({ from: accounts[0], gas: 20000000, gasPrice: 20000000000 })
+      .then((logArray) => {
+        console.log(parseInt(logArray.events.GameJoined.returnValues._gameId));
+        setLoading(false);
+        setWaitingForPlayers(true);
+      })
+      .catch((error) => {
+        console.error("Error joining game:", error);
+        setLoading(false);
+        toast.error("Non posso entrare nel gioco selezionato!")
+        setGameId("")
+    });
+  };
 
 
-    const getInfoGame = () => {
-        setLoading(true);
-        contract.methods.getInfoGame(parseInt(gameId)).send({ from: accounts[0], gas: 20000000 })
-            .then((logArray) => {
-            console.log(parseInt(logArray.events.GetInfo.returnValues._gameId));
-            setEthBet(parseInt(logArray.events.GetInfo.returnValues._ethAmount));
-            setMaxJoiners(parseInt(logArray.events.GetInfo.returnValues._maxjoiners));
-            setTotalJoiners(parseInt(logArray.events.GetInfo.returnValues._totalJoiners));
-            setInfoFetched(true);
-            setLoading(false);
-            })
-            .catch((error) => {
-            console.error("Error fetching game info:", error);
-            setLoading(false);
-            toast.error("Non trovo il gioco selezionato!")
-            setGameId("")
-        });
-    };
+  const getInfoGame = () => {
+    setLoading(true);
+    contract.methods.getInfoGame(parseInt(gameId)).send({ from: accounts[0], gas: 20000000, gasPrice: 20000000000 })
+      .then((logArray) => {
+        console.log(parseInt(logArray.events.GetInfo.returnValues._gameId));
+        setEthBet(parseInt(logArray.events.GetInfo.returnValues._ethAmount));
+        setMaxJoiners(parseInt(logArray.events.GetInfo.returnValues._maxjoiners));
+        setTotalJoiners(parseInt(logArray.events.GetInfo.returnValues._totalJoiners));
+        setInfoFetched(true);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error("Error fetching game info:", error);
+        setLoading(false);
+        toast.error("Non trovo il gioco selezionato!")
+        setGameId("")
+    });
+  };
 
     useEffect(() => {
         try {

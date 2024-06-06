@@ -41,7 +41,7 @@ const CreateRoom = ({setView}) => {
         setCardMatrix(getMatrix(_card));
         let merkleTree = generateMerkleTree(_card);
         console.log(merkleTree[merkleTree.length - 1][0]);
-		contract.methods.createGame(_maxPlayers, _ethBet, `0x${merkleTree[merkleTree.length - 1][0]}`).send({ from: accounts[0], gas: 1000000 }).then((logArray) => {
+		contract.methods.createGame(_maxPlayers, _ethBet, `0x${merkleTree[merkleTree.length - 1][0]}`).send({ from: accounts[0], gas: 1000000, gasPrice: 20000000000}).then((logArray) => {
 			console.log(logArray)
 			setGameId(parseInt(logArray.events.GameCreated.returnValues._gameId));
 			setWaiting(true);
