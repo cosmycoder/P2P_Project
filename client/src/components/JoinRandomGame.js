@@ -16,7 +16,7 @@ const JoinRandomGame = ({ setView }) => {
 
   const joinRandomGame = () => {
     setLoading(true);
-    contract.methods.joinGame(0).send({ from: accounts[0], gas: 20000000 }).then((logArray) => {
+    contract.methods.joinGame(0).send({ from: accounts[0], gas: 20000000, gasPrice: 20000000000 }).then((logArray) => {
       console.log(parseInt(logArray.events.GameJoined.returnValues._gameId));
       setLoading(false);
       setWaitingForPlayers(true); // Show waiting message after joining
@@ -29,7 +29,7 @@ const JoinRandomGame = ({ setView }) => {
 
   const getInfoGame = () => {
     setLoading(true);
-    contract.methods.getInfoGame(0).send({ from: accounts[0], gas: 20000000 }).then((logArray) => {
+    contract.methods.getInfoGame(0).send({ from: accounts[0], gas: 20000000, gasPrice: 20000000000 }).then((logArray) => {
       console.log(parseInt(logArray.events.GetInfo.returnValues._gameId));
       setGameId(parseInt(logArray.events.GetInfo.returnValues._gameId));
       setEthBet(parseInt(logArray.events.GetInfo.returnValues._ethAmount));
