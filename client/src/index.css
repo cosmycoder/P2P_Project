@@ -10,7 +10,7 @@ body {
   @apply
   w-40 h-40 dark:text-white text-black
   dark:bg-blue-500 dark:hover:bg-blue-600 bg-blue-200 hover:bg-blue-300
-  rounded-md p-4 flex text-center items-center transition duration-300 shadow-lg
+  rounded-md p-4 flex justify-center items-center transition duration-300 shadow-lg
 }
 
 .theme-btn {

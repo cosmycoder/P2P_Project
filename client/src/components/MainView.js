@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Button } from "@mui/material";
 import CreateRoom from "./CreateRoom";
-import JoinRandomGame from "./JoinRandomGame";
 import  { FaSun, FaMoon } from 'react-icons/fa'
 import JoinGame from "./JoinGame";
 const MainView = () => {
