@@ -5,7 +5,7 @@ import toast from "react-hot-toast";
 import Board from "./Board";
 import { generateMerkleTree, generateCard, getMatrix } from "../services/TableService";
 
-const JoinGame = ({ setView }) => {
+const JoinGame = ({ setView, randomGame }) => {
     const mockTable = [
         [67, 24, 45, 82, 13],
         [91, 56, 78, 33, 42],
@@ -14,7 +14,7 @@ const JoinGame = ({ setView }) => {
         [47, 59, 3, 80, 66]
     ]
     const { state: { contract, accounts } } = useEth();
-    const [gameId, setGameId] = useState("");
+    const [gameId, setGameId] = useState(randomGame ? "0" : "");
     const [ethBet, setEthBet] = useState(0);
     const [maxJoiners, setMaxJoiners] = useState(0);
     const [totalJoiners, setTotalJoiners] = useState(0);
@@ -27,7 +27,6 @@ const JoinGame = ({ setView }) => {
     const [cardMatrix, setCardMatrix] = useState();
     const [result, setResult] = useState();
     const subscribedToNumbers = false;
-
     const [extractedNumbers, setExtractedNumbers] = useState([])
 
     const re = /^[0-9\b]+$/;
@@ -38,7 +37,12 @@ const JoinGame = ({ setView }) => {
     setCard(_card);
     setCardMatrix(getMatrix(_card));
     let merkleTree = generateMerkleTree(_card);
-    contract.methods.joinGame(parseInt(gameId), `0x${merkleTree[merkleTree.length - 1][0]}`).send({ from: accounts[0], gas: 20000000, gasPrice: 20000000000 })
+    contract.methods.joinGame(parseInt(gameId), `0x${merkleTree[merkleTree.length - 1][0]}`).send({
+        from: accounts[0],
+        gas: 20000000,
+        gasLimit: 180000,
+        gasPrice: 20000000000
+    })
       .then((logArray) => {
         console.log(parseInt(logArray.events.GameJoined.returnValues._gameId));
         setLoading(false);
@@ -55,7 +59,12 @@ const JoinGame = ({ setView }) => {
 
   const getInfoGame = () => {
     setLoading(true);
-    contract.methods.getInfoGame(parseInt(gameId)).send({ from: accounts[0], gas: 20000000, gasPrice: 20000000000 })
+    contract.methods.getInfoGame(parseInt(gameId)).send({
+            from: accounts[0],
+            gas: 200000000,
+            gasLimit: 50000,
+            gasPrice: 20000000000
+        })
       .then((logArray) => {
         console.log(parseInt(logArray.events.GetInfo.returnValues._gameId));
         setEthBet(parseInt(logArray.events.GetInfo.returnValues._ethAmount));
@@ -103,30 +112,33 @@ const JoinGame = ({ setView }) => {
       ) : (
         <div className="grid grid-cols-1 gap-4">
           {!infoFetched ? (
-            <div className="grid grid-cols-1 gap-4">
 
-              <input
-                value={gameId}
-                placeholder="Game ID"
-                className="text-field"
-                onChange={(e) => {
-                //   setError("");
-                if (e.target.value === "" || re.test(e.target.value))
-                  setGameId(e.target.value);
-                }}
-                id="outlined-basic"
-                label="Game ID"
-                // variant="outlined"
-                // error={!!error}
-                // helperText={error}
-              />
+            <div className="grid grid-cols-1 gap-4">
+              { !randomGame &&
+                <input
+                  value={gameId}
+                  placeholder="Game ID"
+                  className="text-field"
+                  onChange={(e) => {
+                    //   setError("");
+                    if (e.target.value === "" || re.test(e.target.value))
+                        setGameId(e.target.value);
+                  }}
+                  id="outlined-basic"
+                  label="Game ID"
+                  // variant="outlined"
+                  // error={!!error}
+                  // helperText={error}
+                />
+
+              }
               <Button
                 variant="contained"
                 className="dark:bg-blue-500 dark:hover:bg-blue-600 bg-blue-400
                                    hover:bg-blue-500 text-white items-center shadow-xl
                                     transition duration-300 dark:disabled:bg-gray-500 disabled:bg-gray-300"
                 onClick={getInfoGame}
-                disabled={loading || gameId.trim() === "" || gameId === "0"}
+                disabled={loading || gameId.trim() === "" || (! randomGame && gameId === "0")}
               >
                 {loading ? 'Loading...' : 'Fetch Game Info'}
               </Button>

@@ -68,7 +68,11 @@ const CreateRoom = ({setView}) => {
 	}
 
     const extractNumber = () => {
-        contract.methods.extractNumber(gameId).send({ from: accounts[0], gas: 1000000 }).then((logArray) => {
+        contract.methods.extractNumber(gameId).send({
+            from: accounts[0],
+            gas: 1000000,
+            gasPrice: 20000000000
+        }).then((logArray) => {
             setExtractedNumbers([...extractedNumbers, logArray.events.NumberExtracted.returnValues.number])
 		}).catch((error) => {
 			console.log(error);

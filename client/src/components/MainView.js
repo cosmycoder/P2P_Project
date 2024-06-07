@@ -60,13 +60,16 @@ const MainView = () => {
 			</div>
 		  )}
 		  {view === "joinRandomGame" && (
-			<div className="flex justify-center items-center h-screen w-screen">
-			  <JoinRandomGame setView={setView} />
+			// <div className="flex justify-center items-center h-screen w-screen">
+			//   <JoinRandomGame setView={setView} />
+			// </div>
+            <div className="flex justify-center items-center h-screen w-screen">
+			  <JoinGame setView={setView} randomGame={true}/>
 			</div>
 		  )}
 		  {view === "joinGame" && (
 			<div className="flex justify-center items-center h-screen w-screen">
-			  <JoinGame setView={setView} />
+			  <JoinGame setView={setView} randomGame={false}/>
 			</div>
 		  )}
 
