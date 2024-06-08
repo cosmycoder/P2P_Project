@@ -1,9 +1,9 @@
-import { Button, CircularProgress, iconButtonClasses } from "@mui/material";
+import { Button, CircularProgress } from "@mui/material";
 import useEth from "../contexts/EthContext/useEth";
 import { useEffect, useState } from "react";
 import Board from "./Board";
 import toast from "react-hot-toast";
-import { generateMerkleTree, generateCard, getMatrix } from "../services/TableService";
+import { generateMerkleTree, generateCard, getMatrix, verifyResult } from "../services/TableService";
 import { isWinningCombination } from "../globals";
 const CreateRoom = ({setView}) => {
 	const mockTable = [
@@ -24,7 +24,8 @@ const CreateRoom = ({setView}) => {
     const [cardMatrix, setCardMatrix] = useState();
 	const [result, setResult] = useState();
     const [canExtract, setCanExtract] = useState(true);
-    const [extractedNumbers, setExtractedNumbers] = useState([])
+    const [extractedNumbers, setExtractedNumbers] = useState([]);
+    const [isBingo, setIsBingo] = useState(false);
     const re = /^[0-9\b]+$/;
 
 	const createGame = () => {
@@ -67,6 +68,8 @@ const CreateRoom = ({setView}) => {
 		// });
 	}
 
+
+
     const extractNumber = () => {
         contract.methods.extractNumber(gameId).send({
             from: accounts[0],
@@ -99,11 +102,15 @@ const CreateRoom = ({setView}) => {
         if (result && isWinningCombination(result)) {
             console.log("Bingo!");
             toast("Bingo!", {icon: '🥳'});
+            setIsBingo(true);
+            verifyResult(card, result, contract);
+        } else {
+            setIsBingo(false);
         }
     }, [result]);
 	return (
         <div className="flex flex-col">
-        {gameStarted && <h1 className="flex text-black dark:text-white text-center text-2xl">{`Numeri estratti: ${extractedNumbers}`}</h1>}
+        {gameStarted && <h1 className="flex text-black dark:text-white justify-center text-2xl">{`Numeri estratti: ${extractedNumbers}`}</h1>}
 
 		<div className="flex justify-center items-center">
 			{!waiting ? (<div className="grid grid-rows-2 gap-4">
@@ -162,6 +169,17 @@ const CreateRoom = ({setView}) => {
 							Revoca accusa
 					</Button>
                     </div>
+
+            <Button
+                className="dark:bg-blue-500 dark:hover:bg-blue-600 bg-blue-400
+                hover:bg-blue-500 text-white items-center shadow-xl
+                transition duration-300 dark:disabled:bg-gray-500 disabled:bg-gray-300"
+                variant="outlined"
+                disabled={!isBingo}
+                onClick={() => {/** Invia risultato */}}>
+                    Invia risultato
+            </Button>
+
                 </div>
                 // <Board size={5} table={mockTable} setResult={setResult}/>
 			)

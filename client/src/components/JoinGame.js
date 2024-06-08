@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Button, Typography, CircularProgress, TextField } from "@mui/material";
+import { Button, Typography, CircularProgress } from "@mui/material";
 import useEth from "../contexts/EthContext/useEth";
 import toast from "react-hot-toast";
 import Board from "./Board";
