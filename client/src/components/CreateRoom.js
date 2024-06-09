@@ -3,7 +3,7 @@ import useEth from "../contexts/EthContext/useEth";
 import { useEffect, useState } from "react";
 import Board from "./Board";
 import toast from "react-hot-toast";
-import { generateMerkleTree, generateCard, getMatrix, verifyResult } from "../services/TableService";
+import { generateMerkleTree, generateCard, getMatrix, generateMerkleProof } from "../services/TableService";
 import { isWinningCombination } from "../globals";
 const CreateRoom = ({setView}) => {
 	const mockTable = [
@@ -103,7 +103,7 @@ const CreateRoom = ({setView}) => {
             console.log("Bingo!");
             toast("Bingo!", {icon: '🥳'});
             setIsBingo(true);
-            verifyResult(card, result, contract);
+            generateMerkleProof(card, result, contract);
         } else {
             setIsBingo(false);
         }

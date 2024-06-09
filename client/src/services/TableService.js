@@ -1,4 +1,4 @@
-import { keccak256, kmac_128 } from 'js-sha3';
+import { keccak256 } from 'js-sha3';
 
 function getRandom(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -89,18 +89,18 @@ export function generateMerkleTree(table) {
     return merkleTree;
 }
 
-export const verifyResult = (table, result, contract) => {
-    console.log(table)
+export const generateMerkleProof = (card, result, contract) => {
+    console.log(card)
     console.log(result)
     const proofs = []
-    const merkleTree = generateMerkleTree(table);
+    const merkleTree = generateMerkleTree(card);
+    console.log(merkleTree)
     const leaves = merkleTree[0];
     for (let i = 0; i < result.length; i++) {
         if (!result[i]) {
             continue;
         }
-        console.log("Element " + i.toString())
-        const elementHash = keccak256(table[i].toString()).toString('hex');
+        const elementHash = keccak256(card[i].toString()).toString('hex');
         const index = leaves.indexOf(elementHash);
 
         // if (index === -1) {
@@ -109,11 +109,10 @@ export const verifyResult = (table, result, contract) => {
 
         let proof = [];
         let currentIndex = index;
-        proof.push(table[i].toString());
+        proof.push(card[i].toString());
         proof.push(i.toString());
 
         for (let level = 0; level < merkleTree.length - 1; level++) {
-            console.log (`VERIFY INDEX ${currentIndex}`)
             const currentLevel = merkleTree[level];
             const isRightNode = currentIndex % 2 === 1;
             const siblingIndex = isRightNode ? currentIndex - 1 : currentIndex + 1;
@@ -126,21 +125,22 @@ export const verifyResult = (table, result, contract) => {
         }
         if (index > 15) {
             let last = proof.pop()
-            proof.push(proof[proof.length - 1])
+            proof.push(merkleTree[merkleTree.length - 3][merkleTree[merkleTree.length - 3].length - 1])
             proof.push(last)
         }
         proofs.push(proof);
     }
-    console.log(proofs)
-    for (let p of proofs) {
-        console.log(`Verify ${p[0]} - ${p.slice(2)} - ${merkleTree[merkleTree.length - 1][0]} ` + verifyMerkleProof(p[0], p[1],  merkleTree[merkleTree.length - 1][0], p.slice(2)));
-    }
+    console.log(`MERKLE PROOF IS VALID: ${proofs.every(element => verifyMerkleProof(element[0], element[1],  merkleTree[merkleTree.length - 1][0], element.slice(2)))}`);
+    return proofs;
+    // console.log(proofs)
+    // for (let p of proofs) {
+    //     console.log(`Verify ${p[0]} - ${p.slice(2)} - ${merkleTree[merkleTree.length - 1][0]} ` + verifyMerkleProof(p[0], p[1],  merkleTree[merkleTree.length - 1][0], p.slice(2)));
+    // }
 }
 
 function verifyMerkleProof(element, index, root, proof) {
     let hash = keccak256(element.toString()).toString('hex');
     for (const element of proof) {
-        console.log(`INDEX ${index}`)
         if (index % 2 === 0) {
             hash = keccak256(hash + element).toString('hex');
         } else {
