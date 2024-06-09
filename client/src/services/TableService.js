@@ -150,7 +150,5 @@ function verifyMerkleProof(element, index, root, proof) {
         // Move to the parent node
         index = Math.floor(index / 2);
     }
-
-
     return hash === root;
 }

@@ -183,7 +183,8 @@ contract Bingo {
         uint _index
     ) internal pure returns (bool) {
         bytes32 _hash = _leaf;
-        for (uint256 i = 0; i < _proof.length; i++) {
+        // Starting from 2 to avoid resizing the array
+        for (uint256 i = 2; i < _proof.length; i++) {
             if (_index % 2 == 0) {
                 _hash = keccak256(abi.encodePacked(_hash, _proof[i]));
             } else {
@@ -445,24 +446,28 @@ contract Bingo {
     //         }
     // }
 
-    // function submitCard(uint256 _gameId, bytes32 _merkleRoot) public {
-    //     require(_gameId > 0, "Game id is negative!");
-    //     info storage game = gameList[_gameId];
-    //     address sender = msg.sender;
-    //     require(
-    //         gameList[_gameId].creator == sender || contains(gameList[_gameId].joiners, sender),
-    //         "Player not in that game!"
-    //     );
-    //     require(
-    //         (game.creator == sender && game.creatorMerkleRoot == 0) ||
-    //         (contains(gameList[_gameId].joiners, sender) && game.joinerMerkleRoots[sender] == 0),
-    //         "Card already submitted!"
-    //     );
-    //     if (game.creator == sender) {
-    //         game.creatorMerkleRoot = _merkleRoot;
-    //     } else {
-    //         game.joinerMerkleRoots[sender] = _merkleRoot;
-    //     }
-    // }
+    function submitCard(uint256 _gameId, bytes32[][] memory _merkleProofs) public {
+        require(_gameId > 0, "Game id is negative!");
+        require(
+            gameList[_gameId].creator == msg.sender || contains(gameList[_gameId].joiners, msg.sender),
+            "Player not in that game!"
+        );
+        // require(
+        //     (game.creator == msg.sender && game.creatorMerkleRoot == 0) ||
+        //     (contains(gameList[_gameId].joiners, msg.sender) && game.joinerMerkleRoots[msg.sender] == 0),
+        //     "Card already submitted!"
+        // );
+        bytes32 root = gameList[_gameId].creator == msg.sender
+                       ? gameList[_gameId].creatorMerkleRoot
+                       : gameList[_gameId].joinerMerkleRoots[msg.sender];
+
+        for (uint8 i = 0; i < _merkleProofs.length; i++) {
+            for (uint8 j; j < _merkleProofs[i].length; j++) {
+                if (!verifyMerkleProof(root, _merkleProofs[i][0], _merkleProofs[i], uint(_merkleProofs[i][1]))){}
+                    // emit NotBingo
+            }
+        }
+        // Emite GameEnded with victory
+    }
 
 }

@@ -26,6 +26,7 @@ const CreateRoom = ({setView}) => {
     const [canExtract, setCanExtract] = useState(true);
     const [extractedNumbers, setExtractedNumbers] = useState([]);
     const [isBingo, setIsBingo] = useState(false);
+    const [winningCombination, setWinningCombination] = useState([]);
     const re = /^[0-9\b]+$/;
 
 	const createGame = () => {
@@ -87,6 +88,18 @@ const CreateRoom = ({setView}) => {
           }, 2000);
     };
 
+    const submitWinningCombination = () => {
+        contract.methods.createGame(_maxPlayers, _ethBet, `0x${merkleTree[merkleTree.length - 1][0]}`).send({ from: accounts[0], gas: 1000000, gasPrice: 20000000000}).then((logArray) => {
+			console.log(logArray)
+			setGameId(parseInt(logArray.events.GameCreated.returnValues._gameId));
+			setWaiting(true);
+			toast.success("Gioco creato con successo!");
+		}).catch((error) => {
+			console.log(error);
+			toast.error(`Error creating a game ${String(error)}`);
+		});
+    }
+
     useEffect(() => {
         try {
             contract._events.GameStarted().on('data', event => {
@@ -99,11 +112,12 @@ const CreateRoom = ({setView}) => {
 
     useEffect(() => {
         console.log(result)
-        if (result && isWinningCombination(result)) {
+        const [bingo, combination] = isWinningCombination(result)
+        if (result && bingo) {
             console.log("Bingo!");
             toast("Bingo!", {icon: '🥳'});
             setIsBingo(true);
-            generateMerkleProof(card, result, contract);
+            setWinningCombination(combination);
         } else {
             setIsBingo(false);
         }
