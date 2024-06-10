@@ -1,5 +1,5 @@
 import React, { useReducer, useCallback, useEffect } from "react";
-import Web3, { HexProcessingError } from "web3";
+import Web3 from "web3";
 import EthContext from "./EthContext";
 import { reducer, actions, initialState } from "./state";
 import toast from "react-hot-toast";

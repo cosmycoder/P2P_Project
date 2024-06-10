@@ -83,7 +83,7 @@ contract Bingo {
 
     event GameCancelled(uint256 indexed _gameId);
     //event to communicate the end of a game to all the joiners and the creator, loser is used if reason is that he cheated
-    event NotBingo(uint256 indexed _gameId, address player, bytes32 a, bytes32 b, bytes32 c);
+    event NotBingo(uint256 indexed _gameId, address player);
 
     event GameEnded(
         uint256 indexed _gameId,
@@ -488,8 +488,8 @@ contract Bingo {
 
         for (uint8 i = 0; i < _merkleProofs.length; i++) {
             if (!verifyMerkleProof(root, bytes32ToString(_merkleProofs[i][0]), _merkleProofs[i], stringToUint(bytes32ToString(_merkleProofs[i][1])))){
-                bytes32 _hash = keccak256(abi.encodePacked(bytes32ToString(_merkleProofs[i][0])));
-                emit NotBingo(_gameId, msg.sender, _hash, _merkleProofs[i][2], keccak256(abi.encodePacked(_hash, _merkleProofs[i][2])));
+                emit NotBingo(_gameId, msg.sender);
+                return;
             }
         }
         emit GameEnded(_gameId, msg.sender, WinningReasons.BINGO);

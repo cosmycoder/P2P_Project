@@ -37,7 +37,7 @@ const JoinGame = ({ setView, randomGame }) => {
     setCard(_card);
     setCardMatrix(getMatrix(_card));
     let merkleTree = generateMerkleTree(_card);
-    contract.methods.joinGame(parseInt(gameId), `0x${merkleTree[merkleTree.length - 1][0]}`).send({
+    contract.methods.joinGame(parseInt(gameId), `${merkleTree[merkleTree.length - 1][0]}`).send({
         from: accounts[0],
         gas: 20000000,
         gasLimit: 180000,
@@ -117,7 +117,7 @@ const JoinGame = ({ setView, randomGame }) => {
     useEffect(() => {
         try {
             if (gameStarted) {
-                contract._events.NumberExtracted().on('data', event => {
+                contract._events.GameEnded().on('data', event => {
                     console.log(event.returnValues)
                     if (`${event.returnValues._gameId}` === gameId) {
                         toast("Gioco terminato!", {icon: 'ℹ️'});

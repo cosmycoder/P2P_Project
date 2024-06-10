@@ -1,6 +1,9 @@
-import { keccak256 } from 'js-sha3';
-// import {Buffer} from 'buffer';
+/**
+ * import { keccak256 } from 'js-sha3';
+ * Keeping this as a reminder not to use this function
+*/
 
+import web3 from "web3";
 function getRandom(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
@@ -120,23 +123,23 @@ export function generateMerkleTree(table) {
     // Calc the leaves' hashes + salt
     let tmp = [];
     for (const element of table) {
-        // tmp.push(keccak256((element.toString() + Math.floor(Math.random() * 10)).toString()));
-        tmp.push(keccak256(element.toString()));
+        // tmp.push(web3.utils.soliditySha3((element.toString() + Math.floor(Math.random() * 10)).toString()));
+        tmp.push(web3.utils.soliditySha3(element.toString()));
     }
     merkleTree.push(tmp);
 //     if (tmp[j + 1])
-//     nextLevel.push(keccak256(Buffer.concat([Buffer.from(tmp[j], 'utf-8'), Buffer.from(tmp[j] + 1,  'utf-8')])));
+//     nextLevel.push(web3.utils.soliditySha3(Buffer.concat([Buffer.from(tmp[j], 'utf-8'), Buffer.from(tmp[j] + 1,  'utf-8')])));
 // else
-//     nextLevel.push(keccak256(Buffer.concat([Buffer.from(tmp[j], 'utf-8'), Buffer.from(tmp[j], 'utf-8')]))); // if the level has an odd number of elements, doubles the last element
+//     nextLevel.push(web3.utils.soliditySha3(Buffer.concat([Buffer.from(tmp[j], 'utf-8'), Buffer.from(tmp[j], 'utf-8')]))); // if the level has an odd number of elements, doubles the last element
 
     // Now lets calc the merkle tree
     while (tmp.length > 1) {
         const nextLevel = [];
         for (let j = 0; j < tmp.length; j += 2) {
             if (tmp[j + 1])
-                nextLevel.push(keccak256((tmp[j] + tmp[j + 1])));
+                nextLevel.push(web3.utils.soliditySha3((tmp[j] + tmp[j + 1].slice(2))));
             else
-                nextLevel.push(keccak256((tmp[j] + tmp[j]))); // if the level has an odd number of elements, doubles the last element
+                nextLevel.push(web3.utils.soliditySha3((tmp[j] + tmp[j].slice(2)))); // if the level has an odd number of elements, doubles the last element
         }
         tmp = nextLevel;
         merkleTree.push(nextLevel);
@@ -155,7 +158,7 @@ export const generateMerkleProof = (card, result) => {
         if (!result[i]) {
             continue;
         }
-        const elementHash = keccak256(card[i].toString()).toString('hex');
+        const elementHash = web3.utils.soliditySha3(card[i].toString());
         const index = leaves.indexOf(elementHash);
 
         // if (index === -1) {
@@ -174,14 +177,14 @@ export const generateMerkleProof = (card, result) => {
             const siblingIndex = isRightNode ? currentIndex - 1 : currentIndex + 1;
 
             if (siblingIndex < currentLevel.length) {
-                proof.push(`0x${currentLevel[siblingIndex]}`);
+                proof.push(`${currentLevel[siblingIndex]}`);
             }
 
             currentIndex = Math.floor(currentIndex / 2);
         }
         if (index > 15) {
             let last = proof.pop()
-            proof.push(`0x${merkleTree[merkleTree.length - 3][merkleTree[merkleTree.length - 3].length - 1]}`)
+            proof.push(`${merkleTree[merkleTree.length - 3][merkleTree[merkleTree.length - 3].length - 1]}`)
             proof.push(last)
         }
         proofs.push(proof);
@@ -195,13 +198,13 @@ export const generateMerkleProof = (card, result) => {
 }
 
 function verifyMerkleProof(element, index, root, proof) {
-    let hash = keccak256(element.toString());
+    let hash = web3.utils.soliditySha3(element.toString());
     console.log(hash)
     for (const element of proof) {
         if (index % 2 === 0) {
-            hash = keccak256(hash + element.slice(2));
+            hash = web3.utils.soliditySha3(hash + element.slice(2));
         } else {
-            hash = keccak256(element.slice(2) + hash);
+            hash = web3.utils.soliditySha3(element + hash.slice(2));
         }
 
         // Move to the parent node
