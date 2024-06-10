@@ -100,6 +100,34 @@ const JoinGame = ({ setView, randomGame }) => {
         } catch {}
     }, [contract._events.NumberExtracted()]);
 
+    useEffect(() => {
+        try {
+            if (gameStarted) {
+                contract._events.NotBingo().on('data', event => {
+                    if (`${event.returnValues._gameId}` === gameId) {
+                        console.log("Not bingo!");
+                        console.log(event.returnValues)
+                        toast.error("Non hai fatto bingo!")
+                    }
+                }).on('error', console.error);
+            }
+        } catch {}
+    }, [contract._events.NotBingo()]);
+
+    useEffect(() => {
+        try {
+            if (gameStarted) {
+                contract._events.NumberExtracted().on('data', event => {
+                    console.log(event.returnValues)
+                    if (`${event.returnValues._gameId}` === gameId) {
+                        toast("Gioco terminato!", {icon: 'ℹ️'});
+                        setGameStarted(false);
+                    }
+                }).on('error', console.error);
+            }
+        } catch {}
+    }, [contract._events.GameEnded()]);
+
   return (
     <div className="flex flex-col justify-center items-center h-screen">
     {gameStarted && <h1 className="flex text-black dark:text-white text-center text-2xl">{`Numeri estratti: ${extractedNumbers}`}</h1>}

@@ -20,7 +20,7 @@ const CreateRoom = ({setView}) => {
 	const [gameId, setGameId] = useState();
 	const [waiting, setWaiting] = useState(false);
     const [gameStarted, setGameStarted] = useState(false);
-    const [card, setCard] = useState();
+    const [card, setCard] = useState([]);
     const [cardMatrix, setCardMatrix] = useState();
 	const [result, setResult] = useState();
     const [canExtract, setCanExtract] = useState(true);
@@ -38,7 +38,8 @@ const CreateRoom = ({setView}) => {
 		// 		icon: 'ℹ️'
 		// 	});
 		// });
-        let _card = generateCard();
+        // let _card = generateCard();
+        let _card = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23];
         setCard(_card);
         setCardMatrix(getMatrix(_card));
         let merkleTree = generateMerkleTree(_card);
@@ -89,14 +90,14 @@ const CreateRoom = ({setView}) => {
     };
 
     const submitWinningCombination = () => {
-        contract.methods.createGame(_maxPlayers, _ethBet, `0x${merkleTree[merkleTree.length - 1][0]}`).send({ from: accounts[0], gas: 1000000, gasPrice: 20000000000}).then((logArray) => {
-			console.log(logArray)
-			setGameId(parseInt(logArray.events.GameCreated.returnValues._gameId));
-			setWaiting(true);
-			toast.success("Gioco creato con successo!");
-		}).catch((error) => {
+        const merkleProofs = generateMerkleProof(card, result);
+        contract.methods.submitCard(gameId, merkleProofs).send({
+            from: accounts[0],
+            gas: 1000000,
+            gasPrice: 20000000000
+        }).catch((error) => {
 			console.log(error);
-			toast.error(`Error creating a game ${String(error)}`);
+			toast.error(`Error submitting card ${String(error)}`);
 		});
     }
 
@@ -111,6 +112,34 @@ const CreateRoom = ({setView}) => {
     }, [contract]);
 
     useEffect(() => {
+        try {
+            if (gameStarted) {
+                contract._events.NotBingo().on('data', event => {
+                    if (`${event.returnValues._gameId}` === gameId) {
+                        console.log("Not bingo!");
+                        toast.error("Non hai fatto bingo!")
+                    }
+                }).on('error', console.error);
+            }
+        } catch {}
+    }, [contract._events.NotBingo()]);
+
+    useEffect(() => {
+        try {
+            if (gameStarted) {
+                contract._events.NumberExtracted().on('data', event => {
+                    console.log(event.returnValues)
+                    if (`${event.returnValues._gameId}` === gameId) {
+                        toast("Gioco terminato!", {icon: 'ℹ️'});
+                        setGameStarted(false);
+                    }
+                }).on('error', console.error);
+            }
+        } catch {}
+    }, [contract._events.GameEnded()]);
+
+    useEffect(() => {
+        if (!result) return;
         console.log(result)
         const [bingo, combination] = isWinningCombination(result)
         if (result && bingo) {
@@ -190,7 +219,7 @@ const CreateRoom = ({setView}) => {
                 transition duration-300 dark:disabled:bg-gray-500 disabled:bg-gray-300"
                 variant="outlined"
                 disabled={!isBingo}
-                onClick={() => {/** Invia risultato */}}>
+                onClick={submitWinningCombination}>
                     Invia risultato
             </Button>
 

@@ -1,9 +1,60 @@
 import { keccak256 } from 'js-sha3';
+// import {Buffer} from 'buffer';
 
 function getRandom(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+function hexToBytes(hex) {
+    // Remove the 0x prefix if present
+    hex = hex.startsWith('0x') ? hex.slice(2) : hex;
+
+    // Ensure the hex string has an even number of characters
+    if (hex.length % 2 !== 0) {
+        throw new Error('Invalid hex string');
+    }
+
+    const bytes = new Uint8Array(hex.length / 2);
+    for (let i = 0; i < hex.length; i += 2) {
+        bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
+    }
+    return bytes;
+}
+
+function bytes32ToString(bytes32) {
+    const bytes = hexToBytes(bytes32);
+    const decoder = new TextDecoder();
+    let str = decoder.decode(bytes);
+
+    // Remove trailing null characters (padding zeros)
+    str = str.replace(/\0+$/, '');
+    return str;
+}
+
+function toHexString(byteArray) {
+    return Array.prototype.map.call(byteArray, function(byte) {
+        return ('0' + (byte & 0xFF).toString(16)).slice(-2);
+    }).join('');
+}
+
+function stringToBytes32(str) {
+    // Convert string to byte array
+    const encoder = new TextEncoder();
+    const byteArray = encoder.encode(str);
+
+    // Check if the string is too long
+    if (byteArray.length > 32) {
+        throw new Error("String is too long to convert to bytes32");
+    }
+
+    // Create a buffer of 32 bytes and fill it with zeros
+    let buffer = new Uint8Array(32);
+    buffer.set(byteArray, 0);
+
+    // Convert the buffer to a hexadecimal string
+    const hexString = toHexString(buffer);
+    return `0x${hexString}`;
+}
 
 export function generateCard() {
     let numbers = [];
@@ -70,9 +121,13 @@ export function generateMerkleTree(table) {
     let tmp = [];
     for (const element of table) {
         // tmp.push(keccak256((element.toString() + Math.floor(Math.random() * 10)).toString()));
-        tmp.push(keccak256(element.toString()).toString());
+        tmp.push(keccak256(element.toString()));
     }
     merkleTree.push(tmp);
+//     if (tmp[j + 1])
+//     nextLevel.push(keccak256(Buffer.concat([Buffer.from(tmp[j], 'utf-8'), Buffer.from(tmp[j] + 1,  'utf-8')])));
+// else
+//     nextLevel.push(keccak256(Buffer.concat([Buffer.from(tmp[j], 'utf-8'), Buffer.from(tmp[j], 'utf-8')]))); // if the level has an odd number of elements, doubles the last element
 
     // Now lets calc the merkle tree
     while (tmp.length > 1) {
@@ -89,7 +144,7 @@ export function generateMerkleTree(table) {
     return merkleTree;
 }
 
-export const generateMerkleProof = (card, result, contract) => {
+export const generateMerkleProof = (card, result) => {
     console.log(card)
     console.log(result)
     const proofs = []
@@ -109,8 +164,9 @@ export const generateMerkleProof = (card, result, contract) => {
 
         let proof = [];
         let currentIndex = index;
-        proof.push(card[i].toString());
-        proof.push(i.toString());
+
+        proof.push(stringToBytes32(card[i].toString()));
+        proof.push(stringToBytes32(i.toString()));
 
         for (let level = 0; level < merkleTree.length - 1; level++) {
             const currentLevel = merkleTree[level];
@@ -118,19 +174,19 @@ export const generateMerkleProof = (card, result, contract) => {
             const siblingIndex = isRightNode ? currentIndex - 1 : currentIndex + 1;
 
             if (siblingIndex < currentLevel.length) {
-                proof.push(currentLevel[siblingIndex]);
+                proof.push(`0x${currentLevel[siblingIndex]}`);
             }
 
             currentIndex = Math.floor(currentIndex / 2);
         }
         if (index > 15) {
             let last = proof.pop()
-            proof.push(merkleTree[merkleTree.length - 3][merkleTree[merkleTree.length - 3].length - 1])
+            proof.push(`0x${merkleTree[merkleTree.length - 3][merkleTree[merkleTree.length - 3].length - 1]}`)
             proof.push(last)
         }
         proofs.push(proof);
     }
-    console.log(`MERKLE PROOF IS VALID: ${proofs.every(element => verifyMerkleProof(element[0], element[1],  merkleTree[merkleTree.length - 1][0], element.slice(2)))}`);
+    console.log(`MERKLE PROOF IS VALID: ${proofs.every(element => verifyMerkleProof(bytes32ToString(element[0]), bytes32ToString(element[1]),  merkleTree[merkleTree.length - 1][0], element.slice(2)))}`);
     return proofs;
     // console.log(proofs)
     // for (let p of proofs) {
@@ -139,12 +195,13 @@ export const generateMerkleProof = (card, result, contract) => {
 }
 
 function verifyMerkleProof(element, index, root, proof) {
-    let hash = keccak256(element.toString()).toString('hex');
+    let hash = keccak256(element.toString());
+    console.log(hash)
     for (const element of proof) {
         if (index % 2 === 0) {
-            hash = keccak256(hash + element).toString('hex');
+            hash = keccak256(hash + element.slice(2));
         } else {
-            hash = keccak256(element + hash).toString('hex');
+            hash = keccak256(element.slice(2) + hash);
         }
 
         // Move to the parent node

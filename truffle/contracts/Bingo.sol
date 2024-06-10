@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.4.22 <0.9.0;
-
+pragma experimental ABIEncoderV2; // Needed to use bytes32[][] as function parameter
 contract Bingo {
 /**************************************************************************** */
 /**           Struct containing all the info for a game                      **/
@@ -18,6 +18,10 @@ contract Bingo {
         uint8[] numbersExtracted;
         uint accusationTime;
         address accuser;
+    }
+    enum WinningReasons {
+        BINGO,
+        CREATOR_STALLED
     }
     // enum Cols {
     //     FIRST_COL,
@@ -49,10 +53,9 @@ contract Bingo {
 /***************************************** */
 /**            Events                     **/
 /***************************************** */
-    event outputerror(string myError); // event: error output
 
     event GameCreated(uint256 indexed _gameId, uint256 _maxJoiners,uint256 _totalJoiners); //  Event to log game creation
-
+    event Log(string message);
     //TODO: implementa piu persone
     event GameJoined(
         uint256 indexed _gameId,
@@ -80,11 +83,12 @@ contract Bingo {
 
     event GameCancelled(uint256 indexed _gameId);
     //event to communicate the end of a game to all the joiners and the creator, loser is used if reason is that he cheated
+    event NotBingo(uint256 indexed _gameId, address player, bytes32 a, bytes32 b, bytes32 c);
+
     event GameEnded(
         uint256 indexed _gameId,
         address _winner,
-        address _loser,
-        uint256 _reason
+        WinningReasons _reason
     );
 
     event ResolveAccuse(
@@ -178,11 +182,11 @@ contract Bingo {
 /************************************************ */
     function verifyMerkleProof(
         bytes32 _root,
-        bytes32  _leaf,
+        string memory _leaf,
         bytes32[] memory _proof,
-        uint _index
+        uint256 _index
     ) internal pure returns (bool) {
-        bytes32 _hash = _leaf;
+        bytes32 _hash = keccak256(abi.encodePacked(_leaf));
         // Starting from 2 to avoid resizing the array
         for (uint256 i = 2; i < _proof.length; i++) {
             if (_index % 2 == 0) {
@@ -445,7 +449,28 @@ contract Bingo {
     //             emit AmountEthResponse(sender, gameList[_gameId].ethBalance, _gameId, 1);
     //         }
     // }
+    function bytes32ToString(bytes32 _bytes32) public pure returns (string memory) {
+        uint8 i = 0;
+        while (i < 32 && _bytes32[i] != 0) {
+            i++;
+        }
+        bytes memory bytesArray = new bytes(i);
+        for (i = 0; i < 32 && _bytes32[i] != 0; i++) {
+            bytesArray[i] = _bytes32[i];
+        }
+        return string(bytesArray);
+    }
 
+    function stringToUint(string memory s) public pure returns (uint256) {
+        bytes memory b = bytes(s);
+        uint256 result = 0;
+        for (uint256 i = 0; i < b.length; i++) {
+            // Ensure the character is a digit
+            require(b[i] >= 0x30 && b[i] <= 0x39, "Invalid character");
+            result = result * 10 + (uint256(uint8(b[i])) - 48);
+        }
+        return result;
+    }
     function submitCard(uint256 _gameId, bytes32[][] memory _merkleProofs) public {
         require(_gameId > 0, "Game id is negative!");
         require(
@@ -462,12 +487,12 @@ contract Bingo {
                        : gameList[_gameId].joinerMerkleRoots[msg.sender];
 
         for (uint8 i = 0; i < _merkleProofs.length; i++) {
-            for (uint8 j; j < _merkleProofs[i].length; j++) {
-                if (!verifyMerkleProof(root, _merkleProofs[i][0], _merkleProofs[i], uint(_merkleProofs[i][1]))){}
-                    // emit NotBingo
+            if (!verifyMerkleProof(root, bytes32ToString(_merkleProofs[i][0]), _merkleProofs[i], stringToUint(bytes32ToString(_merkleProofs[i][1])))){
+                bytes32 _hash = keccak256(abi.encodePacked(bytes32ToString(_merkleProofs[i][0])));
+                emit NotBingo(_gameId, msg.sender, _hash, _merkleProofs[i][2], keccak256(abi.encodePacked(_hash, _merkleProofs[i][2])));
             }
         }
-        // Emite GameEnded with victory
+        emit GameEnded(_gameId, msg.sender, WinningReasons.BINGO);
     }
 
 }
