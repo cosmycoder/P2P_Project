@@ -1,5 +1,5 @@
 import React, { useReducer, useCallback, useEffect } from "react";
-import Web3, { HexProcessingError } from "web3";
+import Web3 from "web3";
 import EthContext from "./EthContext";
 import { reducer, actions, initialState } from "./state";
 import toast from "react-hot-toast";
@@ -30,6 +30,7 @@ function EthProvider({ children, setAuth }) {
         } catch (err) {
           console.error(err);
         }
+
         dispatch({
           type: actions.init,
           data: { artifact, web3, accounts, networkID, contract }
@@ -65,7 +66,6 @@ function EthProvider({ children, setAuth }) {
     };
 
     events.forEach(e => window.ethereum.on(e, handleChange));
-    window.ethereum.on("GameCreated", () => {console.log("GameCreated")})
     return () => {
       events.forEach(e => window.ethereum.removeListener(e, handleChange));
     };

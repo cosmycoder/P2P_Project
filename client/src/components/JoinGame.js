@@ -1,31 +1,36 @@
 import React, { useState, useEffect } from "react";
-import { Button, Typography, CircularProgress, TextField } from "@mui/material";
+import { Button, Typography, CircularProgress } from "@mui/material";
 import useEth from "../contexts/EthContext/useEth";
 import toast from "react-hot-toast";
 import Board from "./Board";
 import { generateMerkleTree, generateCard, getMatrix } from "../services/TableService";
 
-const JoinGame = ({ setView }) => {
-  const mockTable = [
-      [67, 24, 45, 82, 13],
-      [91, 56, 78, 33, 42],
-      [10, 99, "🆓", 29, 54],
-      [73, 17, 88, 36, 25],
-      [47, 59, 3, 80, 66]
-  ]
-  const { state: { contract, accounts } } = useEth();
-  const [gameId, setGameId] = useState("");
-  const [ethBet, setEthBet] = useState(0);
-  const [maxJoiners, setMaxJoiners] = useState(0);
-  const [totalJoiners, setTotalJoiners] = useState(0);
-  const [infoFetched, setInfoFetched] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [waitingForPlayers, setWaitingForPlayers] = useState(false);
-  const [error, setError] = useState("");
-  const [gameStarted, setGameStarted] = useState(false);
-  const [card, setCard] = useState();
-  const [cardMatrix, setCardMatrix] = useState();
-  const re = /^[0-9\b]+$/;
+const JoinGame = ({ setView, randomGame }) => {
+    const mockTable = [
+        [67, 24, 45, 82, 13],
+        [91, 56, 78, 33, 42],
+        [10, 99, "🆓", 29, 54],
+        [73, 17, 88, 36, 25],
+        [47, 59, 3, 80, 66]
+    ]
+    const { state: { contract, accounts } } = useEth();
+    const [gameId, setGameId] = useState(randomGame ? "0" : "");
+    const [ethBet, setEthBet] = useState(0);
+    const [maxJoiners, setMaxJoiners] = useState(0);
+    const [totalJoiners, setTotalJoiners] = useState(0);
+    const [infoFetched, setInfoFetched] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [waitingForPlayers, setWaitingForPlayers] = useState(false);
+    const [error, setError] = useState("");
+    const [gameStarted, setGameStarted] = useState(false);
+    const [gameEnded, setGameEnded] = useState(false);
+    const [card, setCard] = useState();
+    const [cardMatrix, setCardMatrix] = useState();
+    const [result, setResult] = useState();
+    const subscribedToNumbers = false;
+    const [extractedNumbers, setExtractedNumbers] = useState([])
+
+    const re = /^[0-9\b]+$/;
 
   const joinGame = () => {
     setLoading(true);
@@ -33,7 +38,12 @@ const JoinGame = ({ setView }) => {
     setCard(_card);
     setCardMatrix(getMatrix(_card));
     let merkleTree = generateMerkleTree(_card);
-    contract.methods.joinGame(parseInt(gameId), `0x${merkleTree[merkleTree.length - 1][0]}`).send({ from: accounts[0], gas: 20000000, gasPrice: 20000000000 })
+    contract.methods.joinGame(parseInt(gameId), `${merkleTree[merkleTree.length - 1][0]}`).send({
+        from: accounts[0],
+        gas: 20000000,
+        gasLimit: 180000,
+        gasPrice: 20000000000
+    })
       .then((logArray) => {
         console.log(parseInt(logArray.events.GameJoined.returnValues._gameId));
         setLoading(false);
@@ -50,14 +60,27 @@ const JoinGame = ({ setView }) => {
 
   const getInfoGame = () => {
     setLoading(true);
-    contract.methods.getInfoGame(parseInt(gameId)).send({ from: accounts[0], gas: 20000000, gasPrice: 20000000000 })
+    contract.methods.getInfoGame(parseInt(gameId)).send({
+            from: accounts[0],
+            gas: 200000000,
+            gasLimit: 50000,
+            gasPrice: 20000000000
+        })
       .then((logArray) => {
+        console.log(logArray)
         console.log(parseInt(logArray.events.GetInfo.returnValues._gameId));
-        setEthBet(parseInt(logArray.events.GetInfo.returnValues._ethAmount));
-        setMaxJoiners(parseInt(logArray.events.GetInfo.returnValues._maxjoiners));
-        setTotalJoiners(parseInt(logArray.events.GetInfo.returnValues._totalJoiners));
-        setInfoFetched(true);
-        setLoading(false);
+        if (logArray.events.GetInfo.returnValues._found) {
+            setEthBet(parseInt(logArray.events.GetInfo.returnValues._ethAmount));
+            setMaxJoiners(parseInt(logArray.events.GetInfo.returnValues._maxjoiners));
+            setTotalJoiners(parseInt(logArray.events.GetInfo.returnValues._totalJoiners));
+            setInfoFetched(true);
+            setLoading(false);
+        } else {
+            toast.error("Gioco non trovato!");
+            setGameId("");
+            setLoading(false);
+        }
+
       })
       .catch((error) => {
         console.error("Error fetching game info:", error);
@@ -67,18 +90,58 @@ const JoinGame = ({ setView }) => {
     });
   };
 
-  useEffect(() => {
-    try {
-      contract._events.GameStarted().on('data', event => {
-          // console.log('Event received:', event);
-          // console.log(event.returnValues);
-          setGameStarted(true)
-      }).on('error', console.error);
-    } catch {}
-  }, [contract]);
+    useEffect(() => {
+        try {
+            contract._events.GameStarted().on('data', event => {
+                setGameStarted(true);
+            }).on('error', console.error);
+        } catch {}
+    }, [contract._events.GameStarted()]);
+
+    useEffect(() => {
+        try {
+            if (!subscribedToNumbers) {
+                contract._events.NumberExtracted().on('data', event => {
+                if (`${event.returnValues._gameId}` === gameId)
+                    setExtractedNumbers([...extractedNumbers, event.returnValues.number]);
+                }).on('error', console.error);
+            }
+        } catch {}
+    }, [contract._events.NumberExtracted()]);
+
+    useEffect(() => {
+        try {
+            if (gameStarted) {
+                contract._events.NotBingo().on('data', event => {
+                    if (`${event.returnValues._gameId}` === gameId) {
+                        console.log("Not bingo!");
+                        console.log(event.returnValues)
+                        toast.error("Non hai fatto bingo!")
+                    }
+                }).on('error', console.error);
+            }
+        } catch {}
+    }, [contract._events.NotBingo()]);
+
+    useEffect(() => {
+        try {
+            if (gameStarted) {
+                contract._events.GameEnded().on('data', event => {
+                    console.log(event.returnValues)
+                    if (`${event.returnValues._gameId}` === gameId) {
+                        toast("Gioco terminato!", {icon: 'ℹ️'});
+                        setGameStarted(false);
+                        setGameStarted(false);
+                    }
+                }).on('error', console.error);
+            }
+        } catch {}
+    }, [contract._events.GameEnded()]);
 
   return (
-    <div className="flex justify-center items-center h-screen">
+    <div className="flex flex-col justify-center items-center h-screen">
+    {gameStarted && <h1 className="flex text-black dark:text-white text-center text-2xl">{`Numeri estratti: ${extractedNumbers}`}</h1>}
+
       {!gameStarted ? waitingForPlayers ? (
         <div className="grid grid-rows-2 gap-4">
           <h1 className="text-center text-2xl text-white">Aspetto che altri giocatori si connettano!</h1>
@@ -87,30 +150,33 @@ const JoinGame = ({ setView }) => {
       ) : (
         <div className="grid grid-cols-1 gap-4">
           {!infoFetched ? (
-            <div className="grid grid-cols-1 gap-4">
 
-              <input
-                value={gameId}
-                placeholder="Game ID"
-                className="text-field"
-                onChange={(e) => {
-                //   setError("");
-                if (e.target.value === "" || re.test(e.target.value))
-                  setGameId(e.target.value);
-                }}
-                id="outlined-basic"
-                label="Game ID"
-                // variant="outlined"
-                // error={!!error}
-                // helperText={error}
-              />
+            <div className="grid grid-cols-1 gap-4">
+              { !randomGame &&
+                <input
+                  value={gameId}
+                  placeholder="Game ID"
+                  className="text-field"
+                  onChange={(e) => {
+                    //   setError("");
+                    if (e.target.value === "" || re.test(e.target.value))
+                        setGameId(e.target.value);
+                  }}
+                  id="outlined-basic"
+                  label="Game ID"
+                  // variant="outlined"
+                  // error={!!error}
+                  // helperText={error}
+                />
+
+              }
               <Button
                 variant="contained"
                 className="dark:bg-blue-500 dark:hover:bg-blue-600 bg-blue-400
                                    hover:bg-blue-500 text-white items-center shadow-xl
                                     transition duration-300 dark:disabled:bg-gray-500 disabled:bg-gray-300"
                 onClick={getInfoGame}
-                disabled={loading || gameId.trim() === "" || gameId === "0"}
+                disabled={loading || gameId.trim() === "" || (! randomGame && gameId === "0")}
               >
                 {loading ? 'Loading...' : 'Fetch Game Info'}
               </Button>
@@ -151,7 +217,7 @@ const JoinGame = ({ setView }) => {
           )}
         </div>
       ) : (
-        <Board size={5} table={cardMatrix}/>
+        <Board size={5} table={cardMatrix} setResult={setResult}/>
     )}
     </div>
   );

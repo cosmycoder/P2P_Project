@@ -19,9 +19,9 @@ export function isWinningCombination(card) {
     for (const combination in winningCombinations) {
         const indexes = winningCombinations[combination];
         if (indexes.every(index => card[index])) {
-            return true;
+            return [true, combination];
         }
     }
-    return false;
+    return [false, null];
 }
 

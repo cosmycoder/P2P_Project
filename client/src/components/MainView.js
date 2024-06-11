@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button } from "@mui/material";
 import CreateRoom from "./CreateRoom";
-import JoinRandomGame from "./JoinRandomGame";
 import  { FaSun, FaMoon } from 'react-icons/fa'
 import JoinGame from "./JoinGame";
 const MainView = () => {
@@ -55,18 +53,21 @@ const MainView = () => {
 		  </div>
 
 		} {view === "createRoom" && (
-			<div className="flex justify-center items-center h-screen">
+			<div className="flex justify-center items-center h-screen w-screen">
 			  <CreateRoom setView={setView} />
 			</div>
 		  )}
 		  {view === "joinRandomGame" && (
-			<div className="flex justify-center items-center h-screen">
-			  <JoinRandomGame setView={setView} />
+			// <div className="flex justify-center items-center h-screen w-screen">
+			//   <JoinRandomGame setView={setView} />
+			// </div>
+            <div className="flex justify-center items-center h-screen w-screen">
+			  <JoinGame setView={setView} randomGame={true}/>
 			</div>
 		  )}
 		  {view === "joinGame" && (
-			<div className="flex justify-center items-center h-screen">
-			  <JoinGame setView={setView} />
+			<div className="flex justify-center items-center h-screen w-screen">
+			  <JoinGame setView={setView} randomGame={false}/>
 			</div>
 		  )}
 

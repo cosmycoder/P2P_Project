@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.4.22 <0.9.0;
-
+pragma experimental ABIEncoderV2; // Needed to use bytes32[][] as function parameter
 contract Bingo {
 /**************************************************************************** */
 /**           Struct containing all the info for a game                      **/
@@ -15,8 +15,13 @@ contract Bingo {
         uint betAmount;
         bytes32 creatorMerkleRoot;
         mapping(address => bytes32) joinerMerkleRoots; // Updated to a mapping
+        uint8[] numbersExtracted;
         uint accusationTime;
         address accuser;
+    }
+    enum WinningReasons {
+        BINGO,
+        CREATOR_STALLED
     }
     // enum Cols {
     //     FIRST_COL,
@@ -28,9 +33,9 @@ contract Bingo {
 /************************************************ */
 /**            Global variables                  **/
 /************************************************ */
-    uint256 public gameId = 0; // Game ID counter
-    mapping(uint256 => info) public gameList; // Mapping of game ID to game info
-    uint256[] public elencoGiochiDisponibili;    // List of available game IDs
+    int256 public gameId = 0; // Game ID counter
+    mapping(int256 => info) public gameList; // Mapping of game ID to game info
+    int256[] public elencoGiochiDisponibili;    // List of available game IDs
     // mapping(uint8 => Cols) private COLS;
     // uint8[] private _FIRST_COL   = [0, 5, 10, 14, 19];
     // uint8[] private _SECOND_COL  = [1, 6, 11, 15, 20];
@@ -48,13 +53,12 @@ contract Bingo {
 /***************************************** */
 /**            Events                     **/
 /***************************************** */
-    event outputerror(string myError); // event: error output
 
-    event GameCreated(uint256 indexed _gameId, uint256 _maxJoiners,uint256 _totalJoiners); //  Event to log game creation
-
+    event GameCreated(int256 indexed _gameId, uint256 _maxJoiners,uint256 _totalJoiners); //  Event to log game creation
+    event Log(string message);
     //TODO: implementa piu persone
     event GameJoined(
-        uint256 indexed _gameId,
+        int256 indexed _gameId,
         address _creator,
         address _joiner,
         uint256 _maxjoiners,
@@ -62,29 +66,31 @@ contract Bingo {
         uint256 _ethAmount
     );
     event GetInfo(
-        uint256 indexed _gameId,
+        int256 indexed _gameId,
         uint256 _maxjoiners,
         uint256 _totalJoiners,
-        uint256 _ethAmount
+        uint256 _ethAmount,
+        bool _found
     );
     event Checkvalue(
-        uint256 indexed _gameId,
+        int256 indexed _gameId,
         address _address,
         uint256 _row,
         uint256 _col
     );
-    event GameStarted(
-        uint256 indexed _gameId
+    event GameStarted(int256 indexed _gameId);
 
-    );
+    event NumberExtracted(int256 _gameId, uint8 number);
+
     event GameCancelled(uint256 indexed _gameId);
     //event to communicate the end of a game to all the joiners and the creator, loser is used if reason is that he cheated
+    event NotBingo(int256 indexed _gameId, address player);
+
     event GameEnded(
-        uint256 indexed _gameId,
+        int256 indexed _gameId,
         address _winner,
-        address _loser,
-        uint256 _reason
-        );
+        WinningReasons _reason
+    );
 
     event ResolveAccuse(
         uint256 indexed _gameId,
@@ -116,29 +122,30 @@ contract Bingo {
     /*********************************************** */
     /**               GETTERS                       **/
     /*********************************************** */
-    function getIDGame() private returns(uint256 ) {
+    function getIDGame() private returns(int256) {
         return ++gameId;
     }
 
-    function getInfo(uint256 _gameId) private view returns (info storage) {
+    function getInfo(int256 _gameId) private view returns (info storage) {
         // Restituisce la struttura dati "info" associata al gameId specificato
         return gameList[_gameId];
     }
 
-    function getInfoGame(uint256 _gameid) public{
+    function getInfoGame(int256 _gameId) public {
         // Verifica se ci sono giochi disponibili
-        require(_gameid >= 0, "Game id is negative!");
-        if(_gameid == 0){
-            uint256 gameID = getRandomGame();
-            require(gameID != 0, "No available games!");
-            emit GetInfo(gameID, gameList[gameID].maxJoiners, gameList[gameID].totalJoiners, gameList[gameID].betAmount);
-            return;
+        if(_gameId == 0){
+            int256 gameID = getRandomGame();
+            if (gameID < 0)
+                emit GetInfo(_gameId, 0, 0, 0, false);
+            else
+                emit GetInfo(gameID, gameList[gameID].maxJoiners, gameList[gameID].totalJoiners, gameList[gameID].betAmount, true);
         }else{
-            if(findIndex(_gameid) > elencoGiochiDisponibili.length){
-                revert("Reverted because game is not available!");
+            if(findIndex(_gameId) > elencoGiochiDisponibili.length){
+                emit GetInfo(_gameId, 0, 0, 0, false);
+                return;
+                // revert("Reverted because game is not available!");
             }
-            emit GetInfo(_gameid, gameList[_gameid].maxJoiners, gameList[_gameid].totalJoiners, gameList[_gameid].betAmount);
-            return;
+            emit GetInfo(_gameId, gameList[_gameId].maxJoiners, gameList[_gameId].totalJoiners, gameList[_gameId].betAmount, true);
         }
     }
 
@@ -151,10 +158,10 @@ contract Bingo {
         return (randomHash % _max);
     }
 
-    function getRandomGame() private view returns (uint256 idGiocoCasuale) {
+    function getRandomGame() private view returns (int256 idGiocoCasuale) {
         // Verifica se ci sono giochi disponibili
         if (elencoGiochiDisponibili.length == 0) {
-            return 0;
+            return -1;
         }
         uint256 indiceCasuale = getRandomNumber(elencoGiochiDisponibili.length);
         idGiocoCasuale = elencoGiochiDisponibili[indiceCasuale];// Ottiene l'ID del gioco corrispondente all'indice casuale
@@ -162,7 +169,7 @@ contract Bingo {
         return idGiocoCasuale;
     }
 
-    function getJoinerMerkleRoots(uint256 _gameId) public view returns (bytes32[] memory) {
+    function getJoinerMerkleRoots(int256 _gameId) public view returns (bytes32[] memory) {
         uint256 joinerCount = gameList[_gameId].joiners.length;
         bytes32[] memory merkleRoots = new bytes32[](joinerCount);
         for (uint256 i = 0; i < joinerCount; i++) {
@@ -177,12 +184,13 @@ contract Bingo {
 /************************************************ */
     function verifyMerkleProof(
         bytes32 _root,
-        bytes32  _leaf,
+        string memory _leaf,
         bytes32[] memory _proof,
-        uint _index
+        uint256 _index
     ) internal pure returns (bool) {
-        bytes32 _hash = _leaf;
-        for (uint256 i = 0; i < _proof.length; i++) {
+        bytes32 _hash = keccak256(abi.encodePacked(_leaf));
+        // Starting from 2 to avoid resizing the array
+        for (uint256 i = 2; i < _proof.length; i++) {
             if (_index % 2 == 0) {
                 _hash = keccak256(abi.encodePacked(_hash, _proof[i]));
             } else {
@@ -193,7 +201,7 @@ contract Bingo {
         return _hash == _root;
     }
 
-    function remove(uint256 _gameId) public  returns (bool) {
+    function remove(int256 _gameId) public  returns (bool) {
         uint256 index = findIndex(_gameId);
         // Verifica se l'elemento è stato trovato e se il numero totale di partecipanti raggiunge il limite
         if (index < elencoGiochiDisponibili.length) {
@@ -208,7 +216,7 @@ contract Bingo {
     }
 
     // Trova l'indice dell'elemento specificato nell'array elencoGiochiDisponibili
-    function findIndex(uint256 _gameId) private view returns (uint256) {
+    function findIndex(int256 _gameId) private view returns (uint256) {
         for (uint256 i = 0; i < elencoGiochiDisponibili.length; i++) {
             if (elencoGiochiDisponibili[i] == _gameId) {
                 return i;
@@ -218,7 +226,7 @@ contract Bingo {
         return elencoGiochiDisponibili.length+1;
     }
 
-    function distributePrizetoAll(uint256 _gameId) public {
+    function distributePrizetoAll(int256 _gameId) public {
         info storage game = gameList[_gameId];
         uint256 betAmountPerPlayer = game.ethBalance /game.joiners.length;
         for (uint256 i = 0; i < game.joiners.length; i++) {
@@ -256,7 +264,7 @@ contract Bingo {
         }
         return array;
     }
-    function removeFromGiochiDisponibili(uint256 _gameId) public  returns (bool) {
+    function removeFromGiochiDisponibili(int256 _gameId) public  returns (bool) {
         uint256 index = findIndex(_gameId);
         // Verifica se l'elemento è stato trovato e se il numero totale di partecipanti raggiunge il limite
         if (index < elencoGiochiDisponibili.length) {
@@ -290,7 +298,7 @@ contract Bingo {
         return keccak256(cardBytes);
     }
 
-    function isCardValid(uint256 _gameId, uint8[24] memory card) internal view returns (bool, bytes32) {
+    function isCardValid(int256 _gameId, uint8[24] memory card) internal view returns (bool, bytes32) {
         bool[75] memory numberSeen;
         bytes32 _cardHash = 0;
         _cardHash = computeCardHash(card);
@@ -332,7 +340,7 @@ contract Bingo {
         require(_maxJoiners > 0, "Max joiners must be greater than 0");
         require(_betAmount > 0, "Bet amount must be greater than 0");
 
-        uint256 gameID = getIDGame();
+        int256 gameID = getIDGame();
         info storage newGame = gameList[gameID];
         newGame.creator = msg.sender;
         newGame.joiners = new address[](0);
@@ -355,9 +363,10 @@ contract Bingo {
     }
 
 
-    function joinGame(uint256 _gameId, bytes32 _cardMerkleRoot) public {
+    function joinGame(int256 _gameId, bytes32 _cardMerkleRoot) public {
+        require(_gameId >= 0, "Game ID must be greater than 0!");
         require(elencoGiochiDisponibili.length > 0, "No available games!");
-        uint256 chosenGameId;
+        int256 chosenGameId;
         if (_gameId == 0) {
             do {
                 chosenGameId = getRandomGame();
@@ -397,8 +406,33 @@ contract Bingo {
         }
     }
 
+    function isExtracted(uint8[] memory numbersList, uint8 newNumber) internal pure returns(bool) {
+        for (uint i = 0; i < numbersList.length; i++) {
+            if (numbersList[i] == newNumber) return true;
+        }
+        return false;
+    }
 
-    // function amountEthDecision(uint256 _gameId, bool _response) public payable {
+    function getNewNumber(int256 seed) internal view returns(uint8) {
+        uint256 randomHash = uint256(keccak256(abi.encodePacked(block.timestamp, block.difficulty, msg.sender, seed)));
+        uint256 randomNumber = (randomHash % 75) + 1;
+        return uint8(randomNumber);
+    }
+
+    function extractNumber(int256 _gameId) public {
+        require(gameList[_gameId].numbersExtracted.length <= 75, "All numbers have been extracted!");
+        uint8 newNumber = getNewNumber(_gameId);
+        int8 i = 1;
+        while (isExtracted(gameList[_gameId].numbersExtracted, newNumber)) {
+            newNumber = getNewNumber(_gameId+i);
+            i++;
+        }
+        gameList[_gameId].numbersExtracted.push(newNumber);
+        emit NumberExtracted(_gameId, newNumber);
+    }
+
+
+    // function amountEthDecision(int256 _gameId, bool _response) public payable {
     //     require(_gameId > 0, "Game id is negative!");
     //     address sender = msg.sender;
     //     require(gameList[_gameId].creator == sender || contains(gameList[_gameId].joiners, sender),
@@ -418,25 +452,50 @@ contract Bingo {
     //             emit AmountEthResponse(sender, gameList[_gameId].ethBalance, _gameId, 1);
     //         }
     // }
+    function bytes32ToString(bytes32 _bytes32) public pure returns (string memory) {
+        uint8 i = 0;
+        while (i < 32 && _bytes32[i] != 0) {
+            i++;
+        }
+        bytes memory bytesArray = new bytes(i);
+        for (i = 0; i < 32 && _bytes32[i] != 0; i++) {
+            bytesArray[i] = _bytes32[i];
+        }
+        return string(bytesArray);
+    }
 
-    // function submitCard(uint256 _gameId, bytes32 _merkleRoot) public {
-    //     require(_gameId > 0, "Game id is negative!");
-    //     info storage game = gameList[_gameId];
-    //     address sender = msg.sender;
-    //     require(
-    //         gameList[_gameId].creator == sender || contains(gameList[_gameId].joiners, sender),
-    //         "Player not in that game!"
-    //     );
-    //     require(
-    //         (game.creator == sender && game.creatorMerkleRoot == 0) ||
-    //         (contains(gameList[_gameId].joiners, sender) && game.joinerMerkleRoots[sender] == 0),
-    //         "Card already submitted!"
-    //     );
-    //     if (game.creator == sender) {
-    //         game.creatorMerkleRoot = _merkleRoot;
-    //     } else {
-    //         game.joinerMerkleRoots[sender] = _merkleRoot;
-    //     }
-    // }
+    function stringToUint(string memory s) public pure returns (uint256) {
+        bytes memory b = bytes(s);
+        uint256 result = 0;
+        for (uint256 i = 0; i < b.length; i++) {
+            // Ensure the character is a digit
+            require(b[i] >= 0x30 && b[i] <= 0x39, "Invalid character");
+            result = result * 10 + (uint256(uint8(b[i])) - 48);
+        }
+        return result;
+    }
+    function submitCard(int256 _gameId, bytes32[][] memory _merkleProofs) public {
+        require(_gameId > 0, "Game id is negative!");
+        require(
+            gameList[_gameId].creator == msg.sender || contains(gameList[_gameId].joiners, msg.sender),
+            "Player not in that game!"
+        );
+        // require(
+        //     (game.creator == msg.sender && game.creatorMerkleRoot == 0) ||
+        //     (contains(gameList[_gameId].joiners, msg.sender) && game.joinerMerkleRoots[msg.sender] == 0),
+        //     "Card already submitted!"
+        // );
+        bytes32 root = gameList[_gameId].creator == msg.sender
+                       ? gameList[_gameId].creatorMerkleRoot
+                       : gameList[_gameId].joinerMerkleRoots[msg.sender];
+
+        for (uint8 i = 0; i < _merkleProofs.length; i++) {
+            if (!verifyMerkleProof(root, bytes32ToString(_merkleProofs[i][0]), _merkleProofs[i], stringToUint(bytes32ToString(_merkleProofs[i][1])))){
+                emit NotBingo(_gameId, msg.sender);
+                return;
+            }
+        }
+        emit GameEnded(_gameId, msg.sender, WinningReasons.BINGO);
+    }
 
 }

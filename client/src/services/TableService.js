@@ -1,9 +1,63 @@
-import { keccak256 } from 'js-sha3';
+/**
+ * import { keccak256 } from 'js-sha3';
+ * Keeping this as a reminder not to use this function
+*/
 
+import web3 from "web3";
 function getRandom(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+function hexToBytes(hex) {
+    // Remove the 0x prefix if present
+    hex = hex.startsWith('0x') ? hex.slice(2) : hex;
+
+    // Ensure the hex string has an even number of characters
+    if (hex.length % 2 !== 0) {
+        throw new Error('Invalid hex string');
+    }
+
+    const bytes = new Uint8Array(hex.length / 2);
+    for (let i = 0; i < hex.length; i += 2) {
+        bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
+    }
+    return bytes;
+}
+
+function bytes32ToString(bytes32) {
+    const bytes = hexToBytes(bytes32);
+    const decoder = new TextDecoder();
+    let str = decoder.decode(bytes);
+
+    // Remove trailing null characters (padding zeros)
+    str = str.replace(/\0+$/, '');
+    return str;
+}
+
+function toHexString(byteArray) {
+    return Array.prototype.map.call(byteArray, function(byte) {
+        return ('0' + (byte & 0xFF).toString(16)).slice(-2);
+    }).join('');
+}
+
+function stringToBytes32(str) {
+    // Convert string to byte array
+    const encoder = new TextEncoder();
+    const byteArray = encoder.encode(str);
+
+    // Check if the string is too long
+    if (byteArray.length > 32) {
+        throw new Error("String is too long to convert to bytes32");
+    }
+
+    // Create a buffer of 32 bytes and fill it with zeros
+    let buffer = new Uint8Array(32);
+    buffer.set(byteArray, 0);
+
+    // Convert the buffer to a hexadecimal string
+    const hexString = toHexString(buffer);
+    return `0x${hexString}`;
+}
 
 export function generateCard() {
     let numbers = [];
@@ -69,22 +123,92 @@ export function generateMerkleTree(table) {
     // Calc the leaves' hashes + salt
     let tmp = [];
     for (const element of table) {
-        // tmp.push(keccak256((element.toString() + Math.floor(Math.random() * 10)).toString()));
-        tmp.push(keccak256(element.toString()).toString());
+        // tmp.push(web3.utils.soliditySha3((element.toString() + Math.floor(Math.random() * 10)).toString()));
+        tmp.push(web3.utils.soliditySha3(element.toString()));
     }
     merkleTree.push(tmp);
+//     if (tmp[j + 1])
+//     nextLevel.push(web3.utils.soliditySha3(Buffer.concat([Buffer.from(tmp[j], 'utf-8'), Buffer.from(tmp[j] + 1,  'utf-8')])));
+// else
+//     nextLevel.push(web3.utils.soliditySha3(Buffer.concat([Buffer.from(tmp[j], 'utf-8'), Buffer.from(tmp[j], 'utf-8')]))); // if the level has an odd number of elements, doubles the last element
 
     // Now lets calc the merkle tree
     while (tmp.length > 1) {
         const nextLevel = [];
         for (let j = 0; j < tmp.length; j += 2) {
             if (tmp[j + 1])
-                nextLevel.push(keccak256((tmp[j] + tmp[j + 1])));
+                nextLevel.push(web3.utils.soliditySha3((tmp[j] + tmp[j + 1].slice(2))));
             else
-                nextLevel.push(keccak256((tmp[j] + tmp[j]))); // if the level has an odd number of elements, doubles the last element
+                nextLevel.push(web3.utils.soliditySha3((tmp[j] + tmp[j].slice(2)))); // if the level has an odd number of elements, doubles the last element
         }
         tmp = nextLevel;
         merkleTree.push(nextLevel);
     }
     return merkleTree;
+}
+
+export const generateMerkleProof = (card, result) => {
+    console.log(card)
+    console.log(result)
+    const proofs = []
+    const merkleTree = generateMerkleTree(card);
+    console.log(merkleTree)
+    const leaves = merkleTree[0];
+    for (let i = 0; i < result.length; i++) {
+        if (!result[i]) {
+            continue;
+        }
+        const elementHash = web3.utils.soliditySha3(card[i].toString());
+        const index = leaves.indexOf(elementHash);
+
+        // if (index === -1) {
+        //     throw new Error('Element not found in the table');
+        // }
+
+        let proof = [];
+        let currentIndex = index;
+
+        proof.push(stringToBytes32(card[i].toString()));
+        proof.push(stringToBytes32(i.toString()));
+
+        for (let level = 0; level < merkleTree.length - 1; level++) {
+            const currentLevel = merkleTree[level];
+            const isRightNode = currentIndex % 2 === 1;
+            const siblingIndex = isRightNode ? currentIndex - 1 : currentIndex + 1;
+
+            if (siblingIndex < currentLevel.length) {
+                proof.push(`${currentLevel[siblingIndex]}`);
+            }
+
+            currentIndex = Math.floor(currentIndex / 2);
+        }
+        if (index > 15) {
+            let last = proof.pop()
+            proof.push(`${merkleTree[merkleTree.length - 3][merkleTree[merkleTree.length - 3].length - 1]}`)
+            proof.push(last)
+        }
+        proofs.push(proof);
+    }
+    console.log(`MERKLE PROOF IS VALID: ${proofs.every(element => verifyMerkleProof(bytes32ToString(element[0]), bytes32ToString(element[1]),  merkleTree[merkleTree.length - 1][0], element.slice(2)))}`);
+    return proofs;
+    // console.log(proofs)
+    // for (let p of proofs) {
+    //     console.log(`Verify ${p[0]} - ${p.slice(2)} - ${merkleTree[merkleTree.length - 1][0]} ` + verifyMerkleProof(p[0], p[1],  merkleTree[merkleTree.length - 1][0], p.slice(2)));
+    // }
+}
+
+function verifyMerkleProof(element, index, root, proof) {
+    let hash = web3.utils.soliditySha3(element.toString());
+    console.log(hash)
+    for (const element of proof) {
+        if (index % 2 === 0) {
+            hash = web3.utils.soliditySha3(hash + element.slice(2));
+        } else {
+            hash = web3.utils.soliditySha3(element + hash.slice(2));
+        }
+
+        // Move to the parent node
+        index = Math.floor(index / 2);
+    }
+    return hash === root;
 }
