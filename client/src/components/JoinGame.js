@@ -23,6 +23,7 @@ const JoinGame = ({ setView, randomGame }) => {
     const [waitingForPlayers, setWaitingForPlayers] = useState(false);
     const [error, setError] = useState("");
     const [gameStarted, setGameStarted] = useState(false);
+    const [gameEnded, setGameEnded] = useState(false);
     const [card, setCard] = useState();
     const [cardMatrix, setCardMatrix] = useState();
     const [result, setResult] = useState();
@@ -66,12 +67,20 @@ const JoinGame = ({ setView, randomGame }) => {
             gasPrice: 20000000000
         })
       .then((logArray) => {
+        console.log(logArray)
         console.log(parseInt(logArray.events.GetInfo.returnValues._gameId));
-        setEthBet(parseInt(logArray.events.GetInfo.returnValues._ethAmount));
-        setMaxJoiners(parseInt(logArray.events.GetInfo.returnValues._maxjoiners));
-        setTotalJoiners(parseInt(logArray.events.GetInfo.returnValues._totalJoiners));
-        setInfoFetched(true);
-        setLoading(false);
+        if (logArray.events.GetInfo.returnValues._found) {
+            setEthBet(parseInt(logArray.events.GetInfo.returnValues._ethAmount));
+            setMaxJoiners(parseInt(logArray.events.GetInfo.returnValues._maxjoiners));
+            setTotalJoiners(parseInt(logArray.events.GetInfo.returnValues._totalJoiners));
+            setInfoFetched(true);
+            setLoading(false);
+        } else {
+            toast.error("Gioco non trovato!");
+            setGameId("");
+            setLoading(false);
+        }
+
       })
       .catch((error) => {
         console.error("Error fetching game info:", error);
@@ -121,6 +130,7 @@ const JoinGame = ({ setView, randomGame }) => {
                     console.log(event.returnValues)
                     if (`${event.returnValues._gameId}` === gameId) {
                         toast("Gioco terminato!", {icon: 'ℹ️'});
+                        setGameStarted(false);
                         setGameStarted(false);
                     }
                 }).on('error', console.error);
