@@ -137,8 +137,10 @@ contract Bingo {
             int256 gameID = getRandomGame();
             if (gameID <= 0){
                 emit GetInfo(_gameId, 0, 0, 0, false);
+                return;
             }else{
                 emit GetInfo(gameID, gameList[gameID].maxJoiners, gameList[gameID].totalJoiners, gameList[gameID].betAmount, true);
+                return;
             }
         }else{
             uint256 gameID = findIndex(_gameId);
@@ -147,7 +149,7 @@ contract Bingo {
                 return;
                 // revert("Reverted because game is not available!");
             }
-            emit GetInfo(int256(gameID), gameList[_gameId].maxJoiners, gameList[_gameId].totalJoiners, gameList[_gameId].betAmount, true);
+            emit GetInfo(_gameId, gameList[_gameId].maxJoiners, gameList[_gameId].totalJoiners, gameList[_gameId].betAmount, true);
         }
     }
 
