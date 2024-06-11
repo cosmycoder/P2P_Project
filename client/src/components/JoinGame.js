@@ -70,6 +70,8 @@ const JoinGame = ({ setView, randomGame }) => {
         console.log(logArray)
         console.log(parseInt(logArray.events.GetInfo.returnValues._gameId));
         if (logArray.events.GetInfo.returnValues._found) {
+            console.log("Game found!");
+            setGameId(String(parseInt(logArray.events.GetInfo.returnValues._gameId)));
             setEthBet(parseInt(logArray.events.GetInfo.returnValues._ethAmount));
             setMaxJoiners(parseInt(logArray.events.GetInfo.returnValues._maxjoiners));
             setTotalJoiners(parseInt(logArray.events.GetInfo.returnValues._totalJoiners));

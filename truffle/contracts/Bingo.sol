@@ -135,17 +135,19 @@ contract Bingo {
         // Verifica se ci sono giochi disponibili
         if(_gameId == 0){
             int256 gameID = getRandomGame();
-            if (gameID < 0)
+            if (gameID <= 0){
                 emit GetInfo(_gameId, 0, 0, 0, false);
-            else
+            }else{
                 emit GetInfo(gameID, gameList[gameID].maxJoiners, gameList[gameID].totalJoiners, gameList[gameID].betAmount, true);
+            }
         }else{
-            if(findIndex(_gameId) > elencoGiochiDisponibili.length){
+            uint256 gameID = findIndex(_gameId);
+            if(gameID > elencoGiochiDisponibili.length){
                 emit GetInfo(_gameId, 0, 0, 0, false);
                 return;
                 // revert("Reverted because game is not available!");
             }
-            emit GetInfo(_gameId, gameList[_gameId].maxJoiners, gameList[_gameId].totalJoiners, gameList[_gameId].betAmount, true);
+            emit GetInfo(int256(gameID), gameList[_gameId].maxJoiners, gameList[_gameId].totalJoiners, gameList[_gameId].betAmount, true);
         }
     }
 
