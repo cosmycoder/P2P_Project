@@ -505,7 +505,7 @@ contract Bingo {
             gameList[_gameId].creator == msg.sender || contains(gameList[_gameId].joiners, msg.sender),
             "Player not in that game!"
         );
-        winner.transfer(gameList[_gameId].betAmount);
+        winner.transfer(msg.value);
 
     }
 
