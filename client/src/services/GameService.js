@@ -1,7 +1,7 @@
 
 import { generateMerkleProof } from "./TableService";
 import toast from "react-hot-toast";
-
+import web3, { eth } from "web3";
 export const submitWinningCombination = (
     contract,
     accounts,
@@ -12,8 +12,8 @@ export const submitWinningCombination = (
     const merkleProofs = generateMerkleProof(state.card, state.result);
     contract.methods.submitCard(state.gameId, merkleProofs).send({
         from: accounts[0],
-        gas: 1000000,
-        gasPrice: 20000000000
+        gas: 100000000,
+        gasLimit: 500000000
     }).then((logArray) => {
         if (logArray.events.GameEnded){
             toast("Gioco terminato!", {icon: 'ℹ️'});
@@ -40,11 +40,11 @@ export const transferEth = (
     ethBet
 ) => {
     console.log(state)
+    let weiBet = web3.utils.toWei(ethBet, 'ether')
     contract.methods.payPlayer(state.gameId, state.winningAddress).send({
         from: accounts[0],
         gas: 1000000,
-        gasPrice: 20000000000,
-        value: ethBet*20000000000
+        value: weiBet
     }).then((logArray) => {
         console.log(logArray);
     }).catch((error) => {

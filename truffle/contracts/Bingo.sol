@@ -241,7 +241,7 @@ contract Bingo {
         }
     }
     //returns true if the element is in the array
-    function contains(address[] memory array, address element) internal pure returns (bool) {
+    function containsAddress(address[] memory array, address element) internal pure returns (bool) {
         uint256 length = array.length;
         for (uint256 i = 0; i < length; i++) {
             if (array[i] == element) {
@@ -250,6 +250,7 @@ contract Bingo {
         }
         return false;
     }
+
 
     //remove an address from an array
     function remove(address[] memory array, address element) internal pure returns (address[] memory) {
@@ -340,7 +341,7 @@ contract Bingo {
 
         require(_maxJoiners > 0, "Max joiners must be greater than 0");
         require(_betAmount > 0, "Bet amount must be greater than 0");
-
+        require(msg.sender.balance/1 ether >= _betAmount, "Cannot bet more than you can afford!");
         int256 gameID = getIDGame();
         info storage newGame = gameList[gameID];
         newGame.creator = msg.sender;
@@ -364,9 +365,10 @@ contract Bingo {
     }
 
 
-    function joinGame(int256 _gameId, bytes32 _cardMerkleRoot) public {
+    function joinGame(int256 _gameId, bytes32 _cardMerkleRoot) public payable {
         require(_gameId >= 0, "Game ID must be greater than 0!");
         require(elencoGiochiDisponibili.length > 0, "No available games!");
+
         int256 chosenGameId;
         if (_gameId == 0) {
             do {
@@ -381,6 +383,9 @@ contract Bingo {
         require(gameList[chosenGameId].totalJoiners < gameList[chosenGameId].maxJoiners, "Game already taken!");
         require(gameList[chosenGameId].creator != msg.sender, "You can't join a game created by yourself!");
         require(gameList[chosenGameId].creatorMerkleRoot != _cardMerkleRoot, "Invalid merkle root!");
+        require(msg.sender.balance/1 ether >= gameList[chosenGameId].betAmount, "Cannot bet more than you can afford!");
+        require(msg.value/1 ether == gameList[chosenGameId].betAmount, "Please send the correct bet amount!");
+
         for (uint i = 0; i < gameList[chosenGameId].joiners.length; i++) {
             require(
                 gameList[chosenGameId]
@@ -436,7 +441,7 @@ contract Bingo {
     // function amountEthDecision(int256 _gameId, bool _response) public payable {
     //     require(_gameId > 0, "Game id is negative!");
     //     address sender = msg.sender;
-    //     require(gameList[_gameId].creator == sender || contains(gameList[_gameId].joiners, sender),
+    //     require(gameList[_gameId].creator == sender || containsAddress(gameList[_gameId].joiners, sender),
     //             "Player not in that game!"
     //     );
 
@@ -478,34 +483,42 @@ contract Bingo {
     function submitCard(int256 _gameId, bytes32[][] memory _merkleProofs) public {
         require(_gameId > 0, "Game id is negative!");
         require(
-            gameList[_gameId].creator == msg.sender || contains(gameList[_gameId].joiners, msg.sender),
+            gameList[_gameId].creator == msg.sender || containsAddress(gameList[_gameId].joiners, msg.sender),
             "Player not in that game!"
         );
         // require(
         //     (game.creator == msg.sender && game.creatorMerkleRoot == 0) ||
-        //     (contains(gameList[_gameId].joiners, msg.sender) && game.joinerMerkleRoots[msg.sender] == 0),
+        //     (containsAddress(gameList[_gameId].joiners, msg.sender) && game.joinerMerkleRoots[msg.sender] == 0),
         //     "Card already submitted!"
         // );
         bytes32 root = gameList[_gameId].creator == msg.sender
                        ? gameList[_gameId].creatorMerkleRoot
                        : gameList[_gameId].joinerMerkleRoots[msg.sender];
-
+        bool isNumberExtracted = false;
         for (uint8 i = 0; i < _merkleProofs.length; i++) {
-            if (!verifyMerkleProof(root, bytes32ToString(_merkleProofs[i][0]), _merkleProofs[i], stringToUint(bytes32ToString(_merkleProofs[i][1])))){
+            isNumberExtracted = false;
+            for (uint8 j = 0; j < gameList[_gameId].numbersExtracted.length; j++) {
+                if (gameList[_gameId].numbersExtracted[j] == stringToUint(bytes32ToString(_merkleProofs[i][0]))){
+                    isNumberExtracted = true;
+                    break;
+                }
+            }
+            if (!isNumberExtracted || !verifyMerkleProof(root, bytes32ToString(_merkleProofs[i][0]), _merkleProofs[i], stringToUint(bytes32ToString(_merkleProofs[i][1])))){
                 emit NotBingo(_gameId, msg.sender);
                 return;
             }
         }
         emit GameEnded(_gameId, msg.sender, gameList[_gameId].ethBalance, WinningReasons.BINGO);
+        payable(msg.sender).transfer(gameList[_gameId].ethBalance*1 ether);
     }
 
     function payPlayer(int256 _gameId, address payable winner) public payable {
         require(_gameId > 0, "Game id is negative!");
         require(
-            gameList[_gameId].creator == msg.sender || contains(gameList[_gameId].joiners, msg.sender),
+            gameList[_gameId].creator == msg.sender || containsAddress(gameList[_gameId].joiners, msg.sender),
             "Player not in that game!"
         );
-        winner.transfer(msg.value);
+        winner.transfer(gameList[_gameId].betAmount);
 
     }
 

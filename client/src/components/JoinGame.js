@@ -6,6 +6,7 @@ import Board from "./Board";
 import { generateMerkleTree, generateCard, getMatrix, isWinningCombination } from "../services/TableService";
 import { submitWinningCombination } from "../services/GameService";
 import Result from "./Result";
+import web3 from "web3";
 const JoinGame = ({ setView, randomGame }) => {
     const mockTable = [
         [67, 24, 45, 82, 13],
@@ -50,8 +51,9 @@ const JoinGame = ({ setView, randomGame }) => {
         contract.methods.joinGame(parseInt(gameState.gameId), `${merkleTree[merkleTree.length - 1][0]}`).send({
             from: accounts[0],
             gas: 20000000,
-            gasLimit: 180000,
-            gasPrice: 20000000000
+            // gasLimit: 180000,
+            value: web3.utils.toWei(ethBet, 'ether')
+
         })
             .then((logArray) => {
             console.log(parseInt(logArray.events.GameJoined.returnValues._gameId));
@@ -73,7 +75,6 @@ const JoinGame = ({ setView, randomGame }) => {
             from: accounts[0],
             gas: 200000000,
             gasLimit: 50000,
-            gasPrice: 20000000000
         })
       .then((logArray) => {
         console.log(logArray)
@@ -124,10 +125,12 @@ const JoinGame = ({ setView, randomGame }) => {
         try {
             if (gameState.gameStarted) {
                 contract._events.NotBingo().on('data', event => {
-                    if (`${event.returnValues._gameId}` === gameState.gameId) {
+                    if (
+                        parseInt(event.returnValues._gameId) === parseInt(gameState.gameId)
+                        && accounts[0].toLowerCase() != event.returnValues.player.toLowerCase()
+                    ) {
                         console.log("Not bingo!");
-                        console.log(event.returnValues)
-                        toast.error("Non hai fatto bingo!")
+                        toast.error("Qualcuno ha chiamato bingo ma non lo era!")
                     }
                 }).on('error', console.error);
             }

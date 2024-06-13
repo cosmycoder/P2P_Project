@@ -7,6 +7,7 @@ import { generateMerkleTree, generateCard, getMatrix } from "../services/TableSe
 import { isWinningCombination } from "../services/TableService";
 import { submitWinningCombination } from "../services/GameService";
 import Result from "./Result";
+import web3 from "web3";
 const CreateRoom = ({setView}) => {
 	// const mockTable = [
 	// 	[0, 1, 2, 3, 4],
@@ -52,11 +53,17 @@ const CreateRoom = ({setView}) => {
         setCardMatrix(getMatrix(_card));
         let merkleTree = generateMerkleTree(_card);
         console.log(merkleTree[merkleTree.length - 1][0]);
-		contract.methods.createGame(_maxPlayers, _ethBet, `${merkleTree[merkleTree.length - 1][0]}`).send({ from: accounts[0], gas: 1000000, gasPrice: 20000000000}).then((logArray) => {
-			console.log(logArray)
-			setGameState(prevState => ({...prevState, gameId: parseInt(logArray.events.GameCreated.returnValues._gameId)}));
-            setWaiting(true);
-			toast.success("Gioco creato con successo!");
+		contract.methods.createGame(_maxPlayers, _ethBet, `${merkleTree[merkleTree.length - 1][0]}`)
+            .send({
+                    from: accounts[0],
+                    gas: 1000000,
+                    value: web3.utils.toWei(_ethBet, 'ether')
+                })
+            .then((logArray) => {
+                console.log(logArray)
+                setGameState(prevState => ({...prevState, gameId: parseInt(logArray.events.GameCreated.returnValues._gameId)}));
+                setWaiting(true);
+                toast.success("Gioco creato con successo!");
 		}).catch((error) => {
 			console.log(error);
 			toast.error(`Error creating a game ${String(error)}`);
@@ -84,7 +91,6 @@ const CreateRoom = ({setView}) => {
         contract.methods.extractNumber(gameState.gameId).send({
             from: accounts[0],
             gas: 1000000,
-            gasPrice: 20000000000
         }).then((logArray) => {
             setExtractedNumbers([...extractedNumbers, logArray.events.NumberExtracted.returnValues.number])
 		}).catch((error) => {
@@ -94,7 +100,7 @@ const CreateRoom = ({setView}) => {
         setCanExtract(false);
         setTimeout(() => {
             setCanExtract(true);
-          }, 2000);
+          }, 500);
     };
 
     const setResult = (result) => {
@@ -120,7 +126,10 @@ const CreateRoom = ({setView}) => {
         try {
             if (gameState.gameStarted) {
                 contract._events.NotBingo().on('data', event => {
-                    if (event.returnValues._gameId === gameState.gameId) {
+                    if (
+                        parseInt(event.returnValues._gameId) === parseInt(gameState.gameId)
+                        && accounts[0].toLowerCase() != event.returnValues.player.toLowerCase()
+                    ) {
                         console.log("Not bingo!");
                         toast.error("Qualcuno ha chiamato bingo ma non lo era!")
                     }
