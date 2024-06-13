@@ -6,7 +6,7 @@ contract Bingo {
 /**           Struct containing all the info for a game                      **/
 /**************************************************************************** */
 
-    struct info {
+    struct Info {
         address creator;
         address[] joiners;
         uint maxJoiners;
@@ -18,6 +18,7 @@ contract Bingo {
         uint8[] numbersExtracted;
         uint accusationTime;
         address accuser;
+        uint numberExtractionWei;
     }
     enum WinningReasons {
         BINGO,
@@ -33,8 +34,8 @@ contract Bingo {
 /************************************************ */
 /**            Global variables                  **/
 /************************************************ */
-    int256 public gameId = 0; // Game ID counter
-    mapping(int256 => info) public gameList; // Mapping of game ID to game info
+    int256 public lastGameId = 0; // Game ID counter
+    mapping(int256 => Info) public gameList; // Mapping of game ID to game info
     int256[] public elencoGiochiDisponibili;    // List of available game IDs
     // mapping(uint8 => Cols) private COLS;
     // uint8[] private _FIRST_COL   = [0, 5, 10, 14, 19];
@@ -90,6 +91,7 @@ contract Bingo {
         int256 indexed _gameId,
         address _winner,
         uint256 _amountWon,
+        uint256 _creatorRefund,
         WinningReasons _reason
     );
 
@@ -123,11 +125,11 @@ contract Bingo {
     /*********************************************** */
     /**               GETTERS                       **/
     /*********************************************** */
-    function getIDGame() private returns(int256) {
-        return ++gameId;
+    function getGameId() private returns(int256) {
+        return ++lastGameId;
     }
 
-    function getInfo(int256 _gameId) private view returns (info storage) {
+    function getInfo(int256 _gameId) private view returns (Info storage) {
         // Restituisce la struttura dati "info" associata al gameId specificato
         return gameList[_gameId];
     }
@@ -136,11 +138,11 @@ contract Bingo {
         // Verifica se ci sono giochi disponibili
         require(_gameId >= 0, "Game ID must be greater than 0!");
         if(_gameId == 0){
-            int256 gameID = getRandomGame();
-            if (gameID < 0)
+            int256 gameId = getRandomGame();
+            if (gameId < 0)
                 emit GetInfo(_gameId, 0, 0, 0, false);
             else
-                emit GetInfo(gameID, gameList[gameID].maxJoiners, gameList[gameID].totalJoiners, gameList[gameID].betAmount, true);
+                emit GetInfo(gameId, gameList[gameId].maxJoiners, gameList[gameId].totalJoiners, gameList[gameId].betAmount, true);
         }else{
             if(findIndex(_gameId) > elencoGiochiDisponibili.length)
                 emit GetInfo(_gameId, 0, 0, 0, false);
@@ -190,7 +192,7 @@ contract Bingo {
         uint256 _index
     ) internal pure returns (bool) {
         bytes32 _hash = keccak256(abi.encodePacked(_leaf));
-        // Starting from 2 to avoid resizing the array
+        // Starting from 2 to avoid resizing the proof array
         for (uint256 i = 2; i < _proof.length; i++) {
             if (_index % 2 == 0) {
                 _hash = keccak256(abi.encodePacked(_hash, _proof[i]));
@@ -202,7 +204,7 @@ contract Bingo {
         return _hash == _root;
     }
 
-    function remove(int256 _gameId) public  returns (bool) {
+    function removeGame(int256 _gameId) public returns (bool) {
         uint256 index = findIndex(_gameId);
         // Verifica se l'elemento è stato trovato e se il numero totale di partecipanti raggiunge il limite
         if (index < elencoGiochiDisponibili.length) {
@@ -211,7 +213,6 @@ contract Bingo {
                 // Rimuove l'ultimo elemento
                 elencoGiochiDisponibili.pop();
                 return true;
-
         }
         return false;
     }
@@ -228,7 +229,7 @@ contract Bingo {
     }
 
     function distributePrizetoAll(int256 _gameId) public {
-        info storage game = gameList[_gameId];
+        Info storage game = gameList[_gameId];
         uint256 betAmountPerPlayer = game.ethBalance /game.joiners.length;
         for (uint256 i = 0; i < game.joiners.length; i++) {
             address player = game.joiners[i];
@@ -251,9 +252,8 @@ contract Bingo {
         return false;
     }
 
-
     //remove an address from an array
-    function remove(address[] memory array, address element) internal pure returns (address[] memory) {
+    function removeAddress(address[] memory array, address element) internal pure returns (address[] memory) {
         uint256 length = array.length;
         for (uint256 i = 0; i < length; i++) {
             if (array[i] == element) {
@@ -266,6 +266,7 @@ contract Bingo {
         }
         return array;
     }
+
     function removeFromGiochiDisponibili(int256 _gameId) public  returns (bool) {
         uint256 index = findIndex(_gameId);
         // Verifica se l'elemento è stato trovato e se il numero totale di partecipanti raggiunge il limite
@@ -280,70 +281,17 @@ contract Bingo {
         return false;
     }
 
-    /** This code has been implemented to perform a table check. It should be implemented in a proper backend not to burn a huge amount of gas
-    function uint8ToBytes32(uint8 _value) public pure returns (bytes32 result) {
-        assembly {
-            mstore(result, shl(248, _value)) // Shift left by 248 to pad with zeros
-        }
-    }
 
-    function computeCardHash(uint8[24] memory card) internal pure returns (bytes32) {
-        bytes memory cardBytes = new bytes(24 * 32);
-        uint8 pos = 0;
-        for (uint256 i = 0; i < 24; i++) {
-            bytes32 elementBytes = uint8ToBytes32(card[i]); // uint to bytes
-            for (uint256 k = 0; k < 32; k++) {
-                cardBytes[pos] = elementBytes[k];
-                pos++;
-            }
-        }
-        return keccak256(cardBytes);
-    }
-
-    function isCardValid(int256 _gameId, uint8[24] memory card) internal view returns (bool, bytes32) {
-        bool[75] memory numberSeen;
-        bytes32 _cardHash = 0;
-        _cardHash = computeCardHash(card);
-        for (uint i = 0; i < gameList[_gameId].joiners.length; i++) {
-            if (
-                gameList[_gameId].joinersCardHashes[gameList[_gameId].joiners[i]] != 0 &&
-                gameList[_gameId].joinersCardHashes[gameList[_gameId].joiners[i]] != _cardHash) {
-                for (uint8 j = 0; j < 24; j++) {
-                    if (COLS[j] == Cols.FIRST_COL && (card[j] < 1 || card[j] > 15)) {
-                        return (false, bytes32(0));
-                    } else if (COLS[j] == Cols.SECOND_COL && (card[j] < 16 || card[j] > 30)) {
-                        return (false, bytes32(0));
-                    } else if (COLS[j] == Cols.THIRD_COL && (card[j] < 31 || card[j] > 45)) {
-                        return (false, bytes32(0));
-                    } else if (COLS[j] == Cols.FOURTH_COL && (card[j] < 61 || card[j] > 75)) {
-                        return (false, bytes32(0));
-                    } else if (COLS[j] == Cols.FIFTH_COL && (card[j] < 46 || card[j] > 60)) {
-                        return (false, bytes32(0));
-                    }
-                    if (numberSeen[card[j]-1]) {
-                        return (false, bytes32(0));
-                    }
-                    numberSeen[card[j]-1] = true;
-                }
-            } else if (gameList[_gameId].joinersCardHashes[gameList[_gameId].joiners[i]] == _cardHash) {
-                return (false, bytes32(0));
-            }
-        }
-        return (true, _cardHash);
-    }
-
-    */
     /**************************************************************** */
     /**       Functions to handle main logic of game                 **/
     /**************************************************************** */
 
     function createGame(uint _maxJoiners, uint _betAmount, bytes32 _cardMerkleRoot) public payable {
-
         require(_maxJoiners > 0, "Max joiners must be greater than 0");
         require(_betAmount > 0, "Bet amount must be greater than 0");
         require(msg.sender.balance/1 ether >= _betAmount, "Cannot bet more than you can afford!");
-        int256 gameID = getIDGame();
-        info storage newGame = gameList[gameID];
+        int256 gameId = getGameId();
+        Info storage newGame = gameList[gameId];
         newGame.creator = msg.sender;
         newGame.joiners = new address[](0);
         newGame.maxJoiners = _maxJoiners;
@@ -357,11 +305,15 @@ contract Bingo {
         // Initialize the creator's merkle root mapping
         newGame.joinerMerkleRoots[msg.sender] = 0;
 
-        elencoGiochiDisponibili.push(gameID);
+        elencoGiochiDisponibili.push(gameId);
 
-        newGame.ethBalance +=  _betAmount;
+        newGame.ethBalance += _betAmount;
 
-        emit GameCreated(gameID,newGame.maxJoiners,newGame.totalJoiners);
+        emit GameCreated(
+            gameId,
+            newGame.maxJoiners,
+            newGame.totalJoiners
+        );
     }
 
 
@@ -426,6 +378,7 @@ contract Bingo {
     }
 
     function extractNumber(int256 _gameId) public {
+        uint startGas = gasleft();
         require(gameList[_gameId].numbersExtracted.length <= 75, "All numbers have been extracted!");
         uint8 newNumber = getNewNumber(_gameId);
         int8 i = 1;
@@ -435,29 +388,9 @@ contract Bingo {
         }
         gameList[_gameId].numbersExtracted.push(newNumber);
         emit NumberExtracted(_gameId, newNumber);
+        gameList[_gameId].numberExtractionWei += (startGas - gasleft()) * tx.gasprice;
     }
 
-
-    // function amountEthDecision(int256 _gameId, bool _response) public payable {
-    //     require(_gameId > 0, "Game id is negative!");
-    //     address sender = msg.sender;
-    //     require(gameList[_gameId].creator == sender || containsAddress(gameList[_gameId].joiners, sender),
-    //             "Player not in that game!"
-    //     );
-
-    //     if (!_response) {
-    //         require(gameList[_gameId].creator != sender, "Creator cannot refuse their own game!");
-    //         remove(gameList[_gameId].joiners,sender);
-    //         elencoGiochiDisponibili.push(_gameId);
-    //             //emith the amount eth refused
-    //         emit AmountEthResponse(sender, gameList[_gameId].betAmount, _gameId, 0);
-    //         } else {
-    //             require(msg.value == gameList[_gameId].ethBalance, "ETH amount is wrong!");
-    //             gameList[_gameId].betAmount += msg.value;
-    //             //emit the amount eth accepted
-    //             emit AmountEthResponse(sender, gameList[_gameId].ethBalance, _gameId, 1);
-    //         }
-    // }
     function bytes32ToString(bytes32 _bytes32) public pure returns (string memory) {
         uint8 i = 0;
         while (i < 32 && _bytes32[i] != 0) {
@@ -508,18 +441,10 @@ contract Bingo {
                 return;
             }
         }
-        emit GameEnded(_gameId, msg.sender, gameList[_gameId].ethBalance, WinningReasons.BINGO);
-        payable(msg.sender).transfer(gameList[_gameId].ethBalance*1 ether);
+        uint creatorRefund = gameList[_gameId].numberExtractionWei/1 ether;
+        uint prize = (gameList[_gameId].ethBalance*1 ether)- creatorRefund;
+        emit GameEnded(_gameId, msg.sender, gameList[_gameId].ethBalance, creatorRefund, WinningReasons.BINGO);
+        payable(msg.sender).transfer(prize);
+        payable(gameList[_gameId].creator).transfer(creatorRefund);
     }
-
-    function payPlayer(int256 _gameId, address payable winner) public payable {
-        require(_gameId > 0, "Game id is negative!");
-        require(
-            gameList[_gameId].creator == msg.sender || containsAddress(gameList[_gameId].joiners, msg.sender),
-            "Player not in that game!"
-        );
-        winner.transfer(gameList[_gameId].betAmount);
-
-    }
-
 }
