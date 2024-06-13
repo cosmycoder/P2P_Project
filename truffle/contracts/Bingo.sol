@@ -89,6 +89,7 @@ contract Bingo {
     event GameEnded(
         int256 indexed _gameId,
         address _winner,
+        uint256 _amountWon,
         WinningReasons _reason
     );
 
@@ -133,6 +134,7 @@ contract Bingo {
 
     function getInfoGame(int256 _gameId) public {
         // Verifica se ci sono giochi disponibili
+        require(_gameId >= 0, "Game ID must be greater than 0!");
         if(_gameId == 0){
             int256 gameID = getRandomGame();
             if (gameID < 0)
@@ -140,12 +142,11 @@ contract Bingo {
             else
                 emit GetInfo(gameID, gameList[gameID].maxJoiners, gameList[gameID].totalJoiners, gameList[gameID].betAmount, true);
         }else{
-            if(findIndex(_gameId) > elencoGiochiDisponibili.length){
+            if(findIndex(_gameId) > elencoGiochiDisponibili.length)
                 emit GetInfo(_gameId, 0, 0, 0, false);
-                return;
                 // revert("Reverted because game is not available!");
-            }
-            emit GetInfo(_gameId, gameList[_gameId].maxJoiners, gameList[_gameId].totalJoiners, gameList[_gameId].betAmount, true);
+            else
+                emit GetInfo(_gameId, gameList[_gameId].maxJoiners, gameList[_gameId].totalJoiners, gameList[_gameId].betAmount, true);
         }
     }
 
@@ -495,7 +496,17 @@ contract Bingo {
                 return;
             }
         }
-        emit GameEnded(_gameId, msg.sender, WinningReasons.BINGO);
+        emit GameEnded(_gameId, msg.sender, gameList[_gameId].ethBalance, WinningReasons.BINGO);
+    }
+
+    function payPlayer(int256 _gameId, address payable winner) public payable {
+        require(_gameId > 0, "Game id is negative!");
+        require(
+            gameList[_gameId].creator == msg.sender || contains(gameList[_gameId].joiners, msg.sender),
+            "Player not in that game!"
+        );
+        winner.transfer(gameList[_gameId].betAmount);
+
     }
 
 }

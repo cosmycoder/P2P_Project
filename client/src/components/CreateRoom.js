@@ -3,26 +3,34 @@ import useEth from "../contexts/EthContext/useEth";
 import { useEffect, useState } from "react";
 import Board from "./Board";
 import toast from "react-hot-toast";
-import { generateMerkleTree, generateCard, getMatrix, generateMerkleProof } from "../services/TableService";
-import { isWinningCombination } from "../globals";
+import { generateMerkleTree, generateCard, getMatrix } from "../services/TableService";
+import { isWinningCombination } from "../services/TableService";
+import { submitWinningCombination } from "../services/GameService";
+import Result from "./Result";
 const CreateRoom = ({setView}) => {
-	const mockTable = [
-		[0, 1, 2, 3, 4],
-		[5, 6, 7, 8, 9],
-		[10, 11, "🆓", 12, 13],
-		[14, 15, 16, 17, 18],
-		[19, 20, 21, 22, 23]
-	]
+	// const mockTable = [
+	// 	[0, 1, 2, 3, 4],
+	// 	[5, 6, 7, 8, 9],
+	// 	[10, 11, "🆓", 12, 13],
+	// 	[14, 15, 16, 17, 18],
+	// 	[19, 20, 21, 22, 23]
+	// ]
 
 	const { state: { contract, accounts } } = useEth();
 	const [maxPlayers, setMaxPlayers] = useState("");
 	const [ethBet, setEthBet] = useState("");
-	const [gameId, setGameId] = useState();
-	const [waiting, setWaiting] = useState(false);
-    const [gameStarted, setGameStarted] = useState(false);
-    const [card, setCard] = useState([]);
-    const [cardMatrix, setCardMatrix] = useState();
-	const [result, setResult] = useState();
+    const [waiting, setWaiting] = useState(false);
+    const [gameState, setGameState] = useState({
+        gameId: -1,
+        gameStarted: false,
+        gameEnded: false,
+        waiting: false,
+        card: [],
+        result: [],
+        amountWon: 0,
+        winningAddress: "",
+    });
+    const [cardMatrix, setCardMatrix] = useState([])
     const [canExtract, setCanExtract] = useState(true);
     const [extractedNumbers, setExtractedNumbers] = useState([]);
     const [isBingo, setIsBingo] = useState(false);
@@ -38,16 +46,16 @@ const CreateRoom = ({setView}) => {
 		// 		icon: 'ℹ️'
 		// 	});
 		// });
-        // let _card = generateCard();
-        let _card = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23];
-        setCard(_card);
+        let _card = generateCard();
+        // let _card = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23];
+        setGameState(prevState => ({...prevState, card: _card}));
         setCardMatrix(getMatrix(_card));
         let merkleTree = generateMerkleTree(_card);
         console.log(merkleTree[merkleTree.length - 1][0]);
 		contract.methods.createGame(_maxPlayers, _ethBet, `${merkleTree[merkleTree.length - 1][0]}`).send({ from: accounts[0], gas: 1000000, gasPrice: 20000000000}).then((logArray) => {
 			console.log(logArray)
-			setGameId(parseInt(logArray.events.GameCreated.returnValues._gameId));
-			setWaiting(true);
+			setGameState(prevState => ({...prevState, gameId: parseInt(logArray.events.GameCreated.returnValues._gameId)}));
+            setWaiting(true);
 			toast.success("Gioco creato con successo!");
 		}).catch((error) => {
 			console.log(error);
@@ -73,7 +81,7 @@ const CreateRoom = ({setView}) => {
 
 
     const extractNumber = () => {
-        contract.methods.extractNumber(gameId).send({
+        contract.methods.extractNumber(gameState.gameId).send({
             from: accounts[0],
             gas: 1000000,
             gasPrice: 20000000000
@@ -89,35 +97,32 @@ const CreateRoom = ({setView}) => {
           }, 2000);
     };
 
-    const submitWinningCombination = () => {
-        const merkleProofs = generateMerkleProof(card, result);
-        contract.methods.submitCard(gameId, merkleProofs).send({
-            from: accounts[0],
-            gas: 1000000,
-            gasPrice: 20000000000
-        }).catch((error) => {
-			console.log(error);
-			toast.error(`Error submitting card ${String(error)}`);
-		});
+    const setResult = (result) => {
+        setGameState(prevState => ({...prevState, result: result}));
     }
+
+    useEffect(()=>{
+        console.log(gameState)
+    }, [gameState])
 
     useEffect(() => {
         try {
             contract._events.GameStarted().on('data', event => {
                 // console.log('Event received:', event);
                 // console.log(event.returnValues);
-                setGameStarted(true)
+                setGameState(prevState => ({...prevState, gameStarted: true}));
+                setWaiting(false);
             }).on('error', console.error);
         } catch {}
     }, [contract]);
 
     useEffect(() => {
         try {
-            if (gameStarted) {
+            if (gameState.gameStarted) {
                 contract._events.NotBingo().on('data', event => {
-                    if (`${event.returnValues._gameId}` === gameId) {
+                    if (event.returnValues._gameId === gameState.gameId) {
                         console.log("Not bingo!");
-                        toast.error("Non hai fatto bingo!")
+                        toast.error("Qualcuno ha chiamato bingo ma non lo era!")
                     }
                 }).on('error', console.error);
             }
@@ -126,23 +131,31 @@ const CreateRoom = ({setView}) => {
 
     useEffect(() => {
         try {
-            if (gameStarted) {
-                contract._events.NumberExtracted().on('data', event => {
-                    console.log(event.returnValues)
-                    if (`${event.returnValues._gameId}` === gameId) {
+            if (gameState.gameStarted) {
+                contract._events.GameEnded().on('data', event => {
+                    let _gameId = parseInt(event.returnValues._gameId)
+                    console.log(event.returnValues);
+                    if (_gameId === gameState.gameId) {
                         toast("Gioco terminato!", {icon: 'ℹ️'});
-                        setGameStarted(false);
+                        setGameState(prevState => ({
+                            ...prevState,
+                            gameStarted : false,
+                            gameEnded : true,
+                            amountWon : event.returnValues._amountWon,
+                            winningAddress : event.returnValues._winner.toLowerCase(),
+                        }));
+                        setWaiting(false);
                     }
                 }).on('error', console.error);
             }
         } catch {}
-    }, [contract._events.GameEnded()]);
+    }, [contract, contract._events, contract._events.GameEnded()]);
 
     useEffect(() => {
-        if (!result) return;
-        console.log(result)
-        const [bingo, combination] = isWinningCombination(result)
-        if (result && bingo) {
+        if (!gameState.result) return;
+        console.log(gameState.result)
+        const [bingo, combination] = isWinningCombination(gameState.result)
+        if (gameState.result && bingo) {
             console.log("Bingo!");
             toast("Bingo!", {icon: '🥳'});
             setIsBingo(true);
@@ -150,13 +163,14 @@ const CreateRoom = ({setView}) => {
         } else {
             setIsBingo(false);
         }
-    }, [result]);
+    }, [gameState.result]);
+
 	return (
         <div className="flex flex-col">
-        {gameStarted && <h1 className="flex text-black dark:text-white justify-center text-2xl">{`Numeri estratti: ${extractedNumbers}`}</h1>}
-
+        {!gameState.gameEnded && gameState.gameStarted && <h1 className="flex text-black dark:text-white justify-center text-2xl">{`Numeri estratti: ${extractedNumbers}`}</h1>}
+        {!gameState.gameEnded &&
 		<div className="flex justify-center items-center">
-			{!waiting ? (<div className="grid grid-rows-2 gap-4">
+			{!waiting && !gameState.gameStarted ? (<div className="grid grid-rows-2 gap-4">
 				<input placeholder="Massimo numero di giocatori" className="text-field" value={maxPlayers} onChange={(e) => {if (e.target.value === "" || re.test(e.target.value)) setMaxPlayers(e.target.value)}} id="outlined-basic" label="Massimo numero di giocatori" variant="outlined" />
 				<input placeholder="ETH da scommettere" className="text-field" value={ethBet} onChange={(e) => {if (e.target.value === "" || re.test(e.target.value)) setEthBet(e.target.value)}} id="outlined-basic" label="ETH da scommettere" variant="outlined" />
 				<div  className="grid grid-cols-2 gap-4">
@@ -183,9 +197,9 @@ const CreateRoom = ({setView}) => {
 					</Button>
 
 				</div>
-			</div>) : !gameStarted ? (
+			</div>) : !gameState.gameStarted ? (
 				<div className="grid grid-rows-2 gap-4">
-					<h1 className="text-center text-2xl text-black dark:text-white">{`Stanza numero ${gameId}`}</h1>
+					<h1 className="text-center text-2xl text-black dark:text-white">{`Stanza numero ${gameState.gameId}`}</h1>
 					<h1 className="text-center text-2xl text-black dark:text-white">{"Aspetto che altri giocatori si connettano!"}</h1>
 					<CircularProgress className="m-auto"/>
 				</div>
@@ -219,16 +233,27 @@ const CreateRoom = ({setView}) => {
                 transition duration-300 dark:disabled:bg-gray-500 disabled:bg-gray-300"
                 variant="outlined"
                 disabled={!isBingo}
-                onClick={submitWinningCombination}>
+                onClick={
+                    () => {
+                        submitWinningCombination(
+                            contract,
+                            accounts,
+                            gameState,
+                            setGameState
+                        );
+                    }
+                }
+                >
                     Invia risultato
             </Button>
 
                 </div>
-                // <Board size={5} table={mockTable} setResult={setResult}/>
 			)
-			// 	... <Board size={5} table={mockTable}/>
 		}
 		</div>
+        }
+        {gameState.gameEnded && <Result contract={contract} accounts={accounts} state={gameState} ethBet={ethBet} setView={setView}/>}
+
         </div>
 	)
 }
