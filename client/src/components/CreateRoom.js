@@ -30,6 +30,7 @@ const CreateRoom = ({setView}) => {
         result: [],
         amountWon: 0,
         winningAddress: "",
+        creatorRefund: 0,
     });
     const [cardMatrix, setCardMatrix] = useState([])
     const [canExtract, setCanExtract] = useState(true);
@@ -140,7 +141,7 @@ const CreateRoom = ({setView}) => {
 
     useEffect(() => {
         try {
-            if (gameState.gameStarted) {
+            if (gameState.gameStarted && !gameState.gameEnded) {
                 contract._events.GameEnded().on('data', event => {
                     let _gameId = parseInt(event.returnValues._gameId)
                     console.log(event.returnValues);
@@ -152,6 +153,7 @@ const CreateRoom = ({setView}) => {
                             gameEnded : true,
                             amountWon : event.returnValues._amountWon,
                             winningAddress : event.returnValues._winner.toLowerCase(),
+                            creatorRefund : event.returnValues._creatorRefund,
                         }));
                         setWaiting(false);
                     }

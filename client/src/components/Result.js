@@ -1,5 +1,5 @@
 import { Button, Typography } from "@mui/material";
-import { transferEth } from "../services/GameService";
+import { utils } from "web3";
 const Result = ({contract, accounts, state, ethBet, setView}) => {
     const winningMessage = state.winningAddress === accounts[0].toLowerCase()
         ? `🏆 Congratulazioni! Hai vinto ${state.amountWon} ETH! 🏆`
@@ -10,6 +10,7 @@ const Result = ({contract, accounts, state, ethBet, setView}) => {
     return (
         <div className="flex flex-col items-center justify-center gap-4">
             <Typography className="text-black dark:text-white text-center" variant="h6">{winningMessage}</Typography>
+            <Typography className="text-black dark:text-white text-center" variant="h6">{`Il creatore è stato rimborsato di ${utils.fromWei(state.creatorRefund, "ether")} ETH`}</Typography>
             <div className="">
                 <Button
                 className="dark:bg-blue-500 dark:hover:bg-blue-600 bg-blue-400

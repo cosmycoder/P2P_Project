@@ -34,6 +34,7 @@ const JoinGame = ({ setView, randomGame }) => {
         result: [],
         amountWon: 0,
         winningAddress: "",
+        creatorRefund: 0,
     });
     const [cardMatrix, setCardMatrix] = useState();
     // const subscribedToNumbers = false;
@@ -139,7 +140,7 @@ const JoinGame = ({ setView, randomGame }) => {
 
     useEffect(() => {
         try {
-            if (gameState.gameStarted) {
+            if (gameState.gameStarted && !gameState.gameEnded) {
                 contract._events.GameEnded().on('data', event => {
                     console.log(event.returnValues)
                     if (`${event.returnValues._gameId}` === gameState.gameId) {
@@ -150,6 +151,7 @@ const JoinGame = ({ setView, randomGame }) => {
                             gameEnded : true,
                             amountWon : event.returnValues._amountWon,
                             winningAddress : event.returnValues._winner.toLowerCase(),
+                            creatorRefund : event.returnValues._creatorRefund,
                         }));
                     }
                 }).on('error', console.error);

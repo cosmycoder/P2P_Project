@@ -9,9 +9,9 @@ const MainView = () => {
 
   useEffect(() => {
     document.documentElement.classList.add('dark');
-
   }, []);
-    return(
+
+  return(
         <div>
              <div className="w-1/2 m-auto h-12 mt-7 rounded-lg dark:bg-blue-500 bg-blue-300 shadow-lg flex justify-center items-center">
         <div className="text-black dark:text-white text-lg">Bingo ETH</div>
