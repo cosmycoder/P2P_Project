@@ -2,6 +2,7 @@
 import toast from 'react-hot-toast';
 
 import { generateMerkleProof } from './TableService';
+
 export const submitWinningCombination = (
     contract,
     accounts,

@@ -24,30 +24,13 @@ contract Bingo {
         BINGO,
         CREATOR_STALLED
     }
-    // enum Cols {
-    //     FIRST_COL,
-    //     SECOND_COL,
-    //     THIRD_COL,
-    //     FOURTH_COL,
-    //     FIFTH_COL
-    // }
+
 /************************************************ */
 /**            Global variables                  **/
 /************************************************ */
     int256 public lastGameId = 0; // Game ID counter
     mapping(int256 => Info) public gameList; // Mapping of game ID to game info
     int256[] public elencoGiochiDisponibili;    // List of available game IDs
-    // mapping(uint8 => Cols) private COLS;
-    // uint8[] private _FIRST_COL   = [0, 5, 10, 14, 19];
-    // uint8[] private _SECOND_COL  = [1, 6, 11, 15, 20];
-    // uint8[] private _THIRD_COL   = [2, 7, 16, 21];
-    // uint8[] private _FOURTH_COL  = [3, 8, 12, 17, 22];
-    // uint8[] private _FIFTH_COL   = [4, 9, 13, 18, 23];
-
-
-
-
-
 
 
 
@@ -107,20 +90,7 @@ contract Bingo {
         uint256 _response
     );
 
-    constructor() {
-        /** Code used for the verification of the table
-        for (uint i = 0; i < 5; i++) {
-            COLS[_FIRST_COL[i]]  = Cols.FIRST_COL;
-            COLS[_SECOND_COL[i]] = Cols.SECOND_COL;
-            COLS[_THIRD_COL[i]]  = Cols.THIRD_COL;
-            COLS[_FIFTH_COL[i]]  = Cols.FIFTH_COL;
-            if (i < 4) {
-                COLS[_FOURTH_COL[i]] = Cols.FOURTH_COL;
-
-            }
-        }
-        */
-    }
+    constructor() { }
 
     /*********************************************** */
     /**               GETTERS                       **/
@@ -290,6 +260,7 @@ contract Bingo {
         require(_maxJoiners > 0, "Max joiners must be greater than 0");
         require(_betAmount > 0, "Bet amount must be greater than 0");
         require(msg.sender.balance/1 ether >= _betAmount, "Cannot bet more than you can afford!");
+        require(msg.value == _betAmount*1 ether, "Please send exactly the amount you want to bet!");
         int256 gameId = getGameId();
         Info storage newGame = gameList[gameId];
         newGame.creator = msg.sender;
@@ -419,17 +390,12 @@ contract Bingo {
             gameList[_gameId].creator == msg.sender || containsAddress(gameList[_gameId].joiners, msg.sender),
             "Player not in that game!"
         );
-        // require(
-        //     (game.creator == msg.sender && game.creatorMerkleRoot == 0) ||
-        //     (containsAddress(gameList[_gameId].joiners, msg.sender) && game.joinerMerkleRoots[msg.sender] == 0),
-        //     "Card already submitted!"
-        // );
         bytes32 root = gameList[_gameId].creator == msg.sender
                        ? gameList[_gameId].creatorMerkleRoot
                        : gameList[_gameId].joinerMerkleRoots[msg.sender];
         bool isNumberExtracted = false;
         for (uint8 i = 0; i < _merkleProofs.length; i++) {
-            isNumberExtracted = false;
+            isNumberExtracted = true;
             for (uint8 j = 0; j < gameList[_gameId].numbersExtracted.length; j++) {
                 if (gameList[_gameId].numbersExtracted[j] == stringToUint(bytes32ToString(_merkleProofs[i][0]))){
                     isNumberExtracted = true;
@@ -441,10 +407,8 @@ contract Bingo {
                 return;
             }
         }
-        uint creatorRefund = gameList[_gameId].numberExtractionWei/1 ether;
-        uint prize = (gameList[_gameId].ethBalance*1 ether)- creatorRefund;
-        emit GameEnded(_gameId, msg.sender, gameList[_gameId].ethBalance, creatorRefund, WinningReasons.BINGO);
-        payable(msg.sender).transfer(prize);
-        payable(gameList[_gameId].creator).transfer(creatorRefund);
+        emit GameEnded(_gameId, msg.sender, gameList[_gameId].ethBalance, gameList[_gameId].numberExtractionWei, WinningReasons.BINGO);
+        payable(msg.sender).transfer(gameList[_gameId].ethBalance * 1 ether);
+
     }
 }
