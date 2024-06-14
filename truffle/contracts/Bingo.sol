@@ -126,7 +126,7 @@ contract Bingo {
     function getRandomNumber(uint256 _max) private view returns (uint256) {
        require(_max > 0, "Max must be greater than 0");
         // Generate the random number
-        uint randomHash = uint(keccak256(abi.encodePacked(block.timestamp, block.difficulty, msg.sender)));
+        uint randomHash = uint(keccak256(abi.encodePacked(block.timestamp, block.prevrandao, msg.sender)));
         // Ensure the result is within the desired range
         return (randomHash % _max);
     }
@@ -343,7 +343,7 @@ contract Bingo {
     }
 
     function getNewNumber(int256 seed) internal view returns(uint8) {
-        uint256 randomHash = uint256(keccak256(abi.encodePacked(block.timestamp, block.difficulty, msg.sender, seed)));
+        uint256 randomHash = uint256(keccak256(abi.encodePacked(block.timestamp, block.prevrandao, msg.sender, seed)));
         uint256 randomNumber = (randomHash % 75) + 1;
         return uint8(randomNumber);
     }
