@@ -92,6 +92,25 @@ const JoinGame = ({ setView, randomGame }) => {
     });
   };
 
+  const accusePlayer = () => {
+    setLoading(true);
+    contract.methods.accuse(parseInt(gameId)).send({
+        from: accounts[0],
+        gas: 2000000,
+        gasPrice: 20000000000
+    })
+    .then((logArray) => {
+        console.log(`Accusation made in game with ID: ${gameId}`);
+        setLoading(false);
+        toast.success("Accusation made successfully!");
+        /*TODO: disabilita accusation button*/
+    })
+    .catch((error) => {
+        console.error("Error making accusation:", error);
+        setLoading(false);
+        toast.error("Error making the accusation!");
+    });
+};
     useEffect(() => {
         try {
             contract._events.GameStarted().on('data', event => {
@@ -106,6 +125,10 @@ const JoinGame = ({ setView, randomGame }) => {
                 contract._events.NumberExtracted().on('data', event => {
                 if (`${event.returnValues._gameId}` === gameId)
                     setExtractedNumbers([...extractedNumbers, event.returnValues.number]);
+                    if(event.returnValues._endGame) {
+                        /*TODO: disabilita submit board*/
+                        /*TODO: abilita accusation button*/
+                    }
                 }).on('error', console.error);
             }
         } catch {}
@@ -219,7 +242,19 @@ const JoinGame = ({ setView, randomGame }) => {
           )}
         </div>
       ) : (
+        <div className="flex flex-col items-center">
         <Board size={5} table={cardMatrix} setResult={setResult}/>
+        <div className="fixed bottom-4 right-4">
+          <Button
+            variant="contained"
+            onClick={accusePlayer}
+            className="dark:bg-blue-500 dark:hover:bg-blue-600 bg-blue-400 hover:bg-blue-500 text-white items-center shadow-xl transition duration-300 dark:disabled:bg-gray-500 disabled:bg-gray-300"
+            disabled={loading}
+          >
+            {loading ? 'Loading...' : 'Accuse Player'}
+          </Button>
+        </div>
+        </div>
     )}
     </div>
   );
