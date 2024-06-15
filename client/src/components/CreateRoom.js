@@ -27,6 +27,7 @@ const CreateRoom = ({setView}) => {
     const [extractedNumbers, setExtractedNumbers] = useState([]);
     const [isBingo, setIsBingo] = useState(false);
     const [winningCombination, setWinningCombination] = useState([]);
+    const [accused, setAccused] = useState(false);
     const re = /^[0-9\b]+$/;
 
 	const createGame = () => {
@@ -43,7 +44,8 @@ const CreateRoom = ({setView}) => {
         setCard(_card);
         setCardMatrix(getMatrix(_card));
         let merkleTree = generateMerkleTree(_card);
-        console.log(merkleTree[merkleTree.length - 1][0]);
+
+        console.log(_maxPlayers, _ethBet, `${merkleTree[merkleTree.length - 1][0]}`);
 		contract.methods.createGame(_maxPlayers, _ethBet, `${merkleTree[merkleTree.length - 1][0]}`).send({ from: accounts[0], gas: 1000000, gasPrice: 20000000000}).then((logArray) => {
 			console.log(logArray)
 			setGameId(parseInt(logArray.events.GameCreated.returnValues._gameId));
@@ -73,7 +75,8 @@ const CreateRoom = ({setView}) => {
 
 
     const extractNumber = () => {
-        contract.methods.extractNumber(gameId).send({
+
+        contract.methods.extractNumber(gameId,accused).send({
             from: accounts[0],
             gas: 1000000,
             gasPrice: 20000000000
@@ -86,8 +89,12 @@ const CreateRoom = ({setView}) => {
         setCanExtract(false);
         setTimeout(() => {
             setCanExtract(true);
-          }, 2000);
+          }, 1 /*2000*/);
+        if(accused){
+            setAccused(false);
+        }
     };
+
 
     const submitWinningCombination = () => {
         const merkleProofs = generateMerkleProof(card, result);
@@ -127,16 +134,71 @@ const CreateRoom = ({setView}) => {
     useEffect(() => {
         try {
             if (gameStarted) {
-                contract._events.NumberExtracted().on('data', event => {
+                contract._events.ReceiveAccuse().on('data', event => {
                     console.log(event.returnValues)
+                    console.log("game id = ", gameId);
+                    if (parseInt(event.returnValues._gameId) === gameId) {
+                        toast("Accusa ricevuta!", {icon: 'ℹ️'});
+                        setAccused(true);
+                    }
+                }).on('error', console.error);
+            }
+        } catch {}
+    }, [contract._events.ReceiveAccuse()]);
+
+    useEffect(() => {
+        try {
+            if (gameStarted) {
+                contract._events.ConfirmRemovedAccuse().on('data', event => {
                     if (`${event.returnValues._gameId}` === gameId) {
+                        setAccused(false);
+                        toast.success('Accusa rimossa con successo');
+                    }
+                }).on('error', console.error);
+            }
+        } catch {}
+    }, [contract._events.ConfirmRemovedAccuse()]);
+
+    useEffect(() => {
+        try {
+            if (gameStarted) {
+                contract._events.GameEnded().on('data', event => {
+                    console.log(event.returnValues)
+                    if (parseInt(event.returnValues._gameId) === gameId) {
                         toast("Gioco terminato!", {icon: 'ℹ️'});
                         setGameStarted(false);
+                        setAccused(false);
                     }
                 }).on('error', console.error);
             }
         } catch {}
     }, [contract._events.GameEnded()]);
+
+
+    useEffect(() => {
+        let interval;
+        if (gameStarted){
+            //console.log("dentro primo");
+            if (accused) {
+                //console.log("dentro secondo");
+                interval = setInterval(() => {
+                    contract.methods.checkaccuse(gameId).send({
+                        from: accounts[0],
+                        gas: 1000000,
+                        gasPrice: 20000000000
+                    }).then((logArray) => {
+                        toast.success('checking...');
+                        console.log(parseInt(logArray.events.Checked.returnValues._gameId));
+
+                    }).catch((error) => {
+                        console.log(error);
+                        //toast.error(`Error checking accuse ${String(error)}`);
+                    });
+                }, 10000);
+            }
+            return () => clearInterval(interval);
+        }
+    }, [accused]);
 
     useEffect(() => {
         if (!result) return;
@@ -203,14 +265,7 @@ const CreateRoom = ({setView}) => {
 							Estrai numero
 					</Button>
 
-					<Button
-						className="dark:bg-blue-500 dark:hover:bg-blue-600 bg-blue-400
-                        hover:bg-blue-500 text-white items-center shadow-xl
-                         transition duration-300 dark:disabled:bg-gray-500 disabled:bg-gray-300"
-						variant="outlined"
-						onClick={() => {/** Revoca accusa */}}>
-							Revoca accusa
-					</Button>
+
                     </div>
 
             <Button
