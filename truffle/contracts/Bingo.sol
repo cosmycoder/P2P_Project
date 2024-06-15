@@ -379,7 +379,7 @@ contract Bingo {
         gameList[_gameId].accuser = msg.sender;
         emit ReceiveAccuse(_gameId, msg.sender);
     }
-    function checkaccuse(int256 _gameId) public {
+    function checkAccuse(int256 _gameId) public {
         require(_gameId > 0, "Game id is negative!");
         require(gameList[_gameId].creator == msg.sender, "Only the Creator may accuse!");
         require(gameList[_gameId].accusationTime != 0, "Accusation not made");
