@@ -49,6 +49,7 @@ contract Bingo {
         uint256 _totalJoiners,
         uint256 _ethAmount
     );
+    event Checked(int256 indexed _gameId,bool _value);
     event GetInfo(
         int256 indexed _gameId,
         uint256 _maxjoiners,
@@ -64,12 +65,13 @@ contract Bingo {
     );
     event GameStarted(int256 indexed _gameId);
 
-    event NumberExtracted(int256 _gameId, uint8 number);
+    event NumberExtracted(int256 _gameId, uint8 number,bool _endGame);
 
     event GameCancelled(uint256 indexed _gameId);
     //event to communicate the end of a game to all the joiners and the creator, loser is used if reason is that he cheated
     event NotBingo(int256 indexed _gameId, address player);
 
+    event ConfirmRemovedAccuse(int256 _gameId,bool _value);
     event GameEnded(
         int256 indexed _gameId,
         address _winner,
@@ -78,8 +80,8 @@ contract Bingo {
         WinningReasons _reason
     );
 
-    event ResolveAccuse(
-        uint256 indexed _gameId,
+    event ReceiveAccuse(
+        int256 indexed _gameId,
         address _accuser
     );
 
@@ -109,10 +111,13 @@ contract Bingo {
         require(_gameId >= 0, "Game ID must be greater than 0!");
         if(_gameId == 0){
             int256 gameId = getRandomGame();
-            if (gameId < 0)
+            if (gameId <= 0){
                 emit GetInfo(_gameId, 0, 0, 0, false);
-            else
+                return;
+            }else{
                 emit GetInfo(gameId, gameList[gameId].maxJoiners, gameList[gameId].totalJoiners, gameList[gameId].betAmount, true);
+                return;
+            }
         }else{
             if(findIndex(_gameId) > elencoGiochiDisponibili.length)
                 emit GetInfo(_gameId, 0, 0, 0, false);
@@ -348,8 +353,7 @@ contract Bingo {
         return uint8(randomNumber);
     }
 
-    function extractNumber(int256 _gameId) public {
-        uint startGas = gasleft();
+    function extractNumber(int256 _gameId,bool accused) public {
         require(gameList[_gameId].numbersExtracted.length <= 75, "All numbers have been extracted!");
         uint8 newNumber = getNewNumber(_gameId);
         int8 i = 1;
@@ -358,10 +362,65 @@ contract Bingo {
             i++;
         }
         gameList[_gameId].numbersExtracted.push(newNumber);
-        emit NumberExtracted(_gameId, newNumber);
-        gameList[_gameId].numberExtractionWei += (startGas - gasleft()) * tx.gasprice;
+        if(accused){
+            gameList[_gameId].accusationTime = 0;
+            gameList[_gameId].accuser = address(0);
+        }
+        if(gameList[_gameId].numbersExtracted.length < 75){
+            emit NumberExtracted(_gameId, newNumber,false);
+        }else{
+            emit GameEnded(_gameId, gameList[_gameId].creator,WinningReasons.BINGO);        }
     }
 
+    function accuse (int256 _gameId) public {
+        require(_gameId > 0, "Game id is negative!");
+        require(gameList[_gameId].creator!=msg.sender, "Creator cannot accuse!");
+        require(containsAddres(gameList[_gameId].joiners, msg.sender), "Player not in that game!");
+        require(gameList[_gameId].accusationTime == 0, "Accusation already made!");
+        gameList[_gameId].accusationTime = block.timestamp;
+        gameList[_gameId].accuser = msg.sender;
+        emit ReceiveAccuse(_gameId, msg.sender);
+    }
+    function checkaccuse(int256 _gameId) public {
+    require(_gameId > 0, "Game id is negative!");
+    require(gameList[_gameId].creator == msg.sender, "Only the Creator may accuse!");
+    require(gameList[_gameId].accusationTime != 0, "Accusation not made");
+
+    // Check if at least 5 seconds have passed since the accusation
+    if (block.timestamp >= gameList[_gameId].accusationTime + 5) {
+        // If more than 5 seconds have passed, handle end game logic
+
+        // TODO: Pay all remaining players
+        // Implement the logic to pay remaining players here
+
+        emit GameEnded(_gameId, gameList[_gameId].creator, WinningReasons.CREATOR_STALLED);
+    } else {
+        emit Checked(_gameId, true);
+    }
+}
+
+
+
+    // function amountEthDecision(int256 _gameId, bool _response) public payable {
+    //     require(_gameId > 0, "Game id is negative!");
+    //     address sender = msg.sender;
+    //     require(gameList[_gameId].creator == sender || contains(gameList[_gameId].joiners, sender),
+    //             "Player not in that game!"
+    //     );
+
+    //     if (!_response) {
+    //         require(gameList[_gameId].creator != sender, "Creator cannot refuse their own game!");
+    //         remove(gameList[_gameId].joiners,sender);
+    //         elencoGiochiDisponibili.push(_gameId);
+    //             //emith the amount eth refused
+    //         emit AmountEthResponse(sender, gameList[_gameId].betAmount, _gameId, 0);
+    //         } else {
+    //             require(msg.value == gameList[_gameId].ethBalance, "ETH amount is wrong!");
+    //             gameList[_gameId].betAmount += msg.value;
+    //             //emit the amount eth accepted
+    //             emit AmountEthResponse(sender, gameList[_gameId].ethBalance, _gameId, 1);
+    //         }
+    // }
     function bytes32ToString(bytes32 _bytes32) public pure returns (string memory) {
         uint8 i = 0;
         while (i < 32 && _bytes32[i] != 0) {
