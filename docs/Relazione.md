@@ -28,6 +28,7 @@ header-includes: |
 # Introduzione
 
 L'applicazione sviluppata come progetto finale del corso di Peer To Peer & Blockchains si chiama BingoEth e si tratta di un'implementazione del bingo 75 (la versione americana del bingo) realizzata in React/javascript per la parte di front-end e in Solidity per la parte di smart contract.
+È possibile consultare il repository
 
 # Struttura del progetto
 
