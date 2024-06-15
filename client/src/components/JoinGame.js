@@ -81,8 +81,6 @@ const JoinGame = ({ setView, randomGame }) => {
         console.log(logArray)
         console.log(parseInt(logArray.events.GetInfo.returnValues._gameId));
         if (logArray.events.GetInfo.returnValues._found) {
-            console.log("Game found!");
-            setGameId(String(parseInt(logArray.events.GetInfo.returnValues._gameId)));
             setEthBet(parseInt(logArray.events.GetInfo.returnValues._ethAmount));
             setMaxJoiners(parseInt(logArray.events.GetInfo.returnValues._maxjoiners));
             setTotalJoiners(parseInt(logArray.events.GetInfo.returnValues._totalJoiners));
@@ -108,13 +106,13 @@ const JoinGame = ({ setView, randomGame }) => {
 
   const accusePlayer = () => {
     setLoading(true);
-    contract.methods.accuse(parseInt(gameId)).send({
+    contract.methods.accuse(parseInt(gameState.gameId)).send({
         from: accounts[0],
         gas: 2000000,
         gasPrice: 20000000000
     })
     .then((logArray) => {
-        console.log(`Accusation made in game with ID: ${gameId}`);
+        console.log(`Accusation made in game with ID: ${gameState.gameId}`);
         setLoading(false);
         toast.success("Accusation made successfully!");
         /*TODO: disabilita accusation button*/

@@ -147,8 +147,7 @@ const CreateRoom = ({setView}) => {
             if (gameState.gameStarted) {
                 contract._events.ReceiveAccuse().on('data', event => {
                     console.log(event.returnValues)
-                    console.log("game id = ", gameId);
-                    if (parseInt(event.returnValues._gameId) === gameId) {
+                    if (parseInt(event.returnValues._gameId) === gameState.gameId) {
                         toast("Accusa ricevuta!", {icon: 'ℹ️'});
                         setAccused(true);
                     }
@@ -161,7 +160,7 @@ const CreateRoom = ({setView}) => {
         try {
             if (gameState.gameStarted) {
                 contract._events.ConfirmRemovedAccuse().on('data', event => {
-                    if (`${event.returnValues._gameId}` === gameId) {
+                    if (event.returnValues._gameId === gameState.gameId) {
                         setAccused(false);
                         toast.success('Accusa rimossa con successo');
                     }
@@ -175,7 +174,7 @@ const CreateRoom = ({setView}) => {
             if (gameState.gameStarted) {
                 contract._events.GameEnded().on('data', event => {
                     console.log(event.returnValues)
-                    if (parseInt(event.returnValues._gameId) === gameId) {
+                    if (parseInt(event.returnValues._gameId) === gameState.gameId) {
                         toast("Gioco terminato!", {icon: 'ℹ️'});
                         setGameState(prevState => ({
                             ...prevState,
@@ -201,13 +200,13 @@ const CreateRoom = ({setView}) => {
             if (accused) {
                 //console.log("dentro secondo");
                 interval = setInterval(() => {
-                    contract.methods.checkaccuse(gameId).send({
+                    contract.methods.checkaccuse(gameState.gameId).send({
                         from: accounts[0],
                         gas: 1000000,
                         gasPrice: 20000000000
                     }).then((logArray) => {
                         toast.success('checking...');
-                        console.log(parseInt(logArray.events.Checked.returnValues._gameId));
+                        console.log(parseInt(logArray._events.Checked.returnValues._gameId));
 
                     }).catch((error) => {
                         console.log(error);
@@ -227,7 +226,7 @@ const CreateRoom = ({setView}) => {
             if (accused) {
                 //console.log("dentro secondo");
                 interval = setInterval(() => {
-                    contract.methods.checkaccuse(gameId).send({
+                    contract.methods.checkaccuse(gameState.gameId).send({
                         from: accounts[0],
                         gas: 1000000,
                     }).then((logArray) => {

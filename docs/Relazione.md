@@ -45,3 +45,19 @@ Il progetto è stato organizzato come segue:
 .2 test $\rightarrow$ \small{Test del contratto}.
 .1 Dockerfile/docker-compose.yml $\rightarrow$ \small{Container docker per il test e il deploy}.
 }
+
+```java
+    function accuse (int256 _gameId) public {
+        require(_gameId > 0, "Game id is negative!");
+        require(gameList[_gameId].creator!=msg.sender, "Creator cannot accuse!");
+        require(
+            containsAddress(
+                gameList[_gameId].joiners,
+                msg.sender
+            ), "Player not in that game!");
+        require(gameList[_gameId].accusationTime == 0, "Accusation already made!");
+        gameList[_gameId].accusationTime = block.timestamp;
+        gameList[_gameId].accuser = msg.sender;
+        emit ReceiveAccuse(_gameId, msg.sender);
+    }
+```
