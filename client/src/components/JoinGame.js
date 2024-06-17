@@ -324,28 +324,41 @@ const LoadingScreen = () => (
   );
 
   const GameInfo = ({ gameState, ethBet, maxJoiners, totalJoiners, loading, joinGame, setInfoFetched }) => (
-    <div>
-      <Typography className="text-black dark:text-white" variant="h6">Game ID: {gameState.gameId}</Typography>
-      <Typography className="text-black dark:text-white" variant="h6">ETH Bet: {ethBet}</Typography>
-      <Typography className="text-black dark:text-white" variant="h6">Max Joiners: {maxJoiners}</Typography>
-      <Typography className="text-black dark:text-white" variant="h6">Total Joiners: {totalJoiners}</Typography>
-      <div className="grid grid-cols-2 gap-4">
-        <Button
-          variant="contained"
-          onClick={joinGame}
-          className="dark:bg-blue-500 dark:hover:bg-blue-600 bg-blue-400 hover:bg-blue-500 text-white items-center shadow-xl transition duration-300 dark:disabled:bg-gray-500 disabled:bg-gray-300"
-          disabled={gameState.gameId.trim() === '' || loading || gameState.gameId === '0'}
+    <div className="flex flex-col justify-center items-center">
+        <div className='dark:border-slate-800
+                       border-slate-200  border-2 pt-5 pb-5 pl-10 pr-10 gap-3 rounded-3xl shadow-lg m-2'>
+        <Typography
+            className="text-center text-black dark:text-white"
+            variant="h6"
         >
-          {loading ? 'Joining...' : 'Join Game'}
+            Game ID: {gameState.gameId}
+        </Typography>
+        <Typography className="text-center text-black dark:text-white"
+                    variant="h6">
+                ETH da scommettere: {ethBet}
+        </Typography>
+        <Typography className="text-center text-black dark:text-white"
+                    variant="h6">
+                Giocatori in partita: {totalJoiners}/{maxJoiners}
+        </Typography>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+        <Button
+            variant="contained"
+            onClick={joinGame}
+            className="dark:bg-blue-500 dark:hover:bg-blue-600 bg-blue-400 hover:bg-blue-500 text-white items-center shadow-xl transition duration-300 dark:disabled:bg-gray-500 disabled:bg-gray-300"
+            disabled={gameState.gameId.trim() === '' || loading || gameState.gameId === '0'}
+        >
+            {loading ? 'Joining...' : 'Join Game'}
         </Button>
         <Button
-          className="dark:border-blue-500 dark:hover:border-blue-600 dark:text-blue-500 dark:hover:text-blue-600 border-blue-400 hover:border-blue-500 text-blue-400 hover:text-blue-500 items-center shadow-xl transition duration-300"
-          variant="outlined"
-          onClick={() => setInfoFetched(false)}
+            className="dark:border-blue-500 dark:hover:border-blue-600 dark:text-blue-500 dark:hover:text-blue-600 border-blue-400 hover:border-blue-500 text-blue-400 hover:text-blue-500 items-center shadow-xl transition duration-300"
+            variant="outlined"
+            onClick={() => setInfoFetched(false)}
         >
-          Torna indietro
+            Torna indietro
         </Button>
-      </div>
+        </div>
     </div>
   );
 
