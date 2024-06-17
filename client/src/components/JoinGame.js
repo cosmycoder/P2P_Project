@@ -18,7 +18,7 @@ const JoinGame = ({ setView, randomGame }) => {
     const [loading, setLoading] = useState(false);
     const [isBingo, setIsBingo] = useState(false);
     const [waitingForPlayers, setWaitingForPlayers] = useState(false);
-
+    const [accusePending, setAccusePending] = useState(false);
     const [gameState, setGameState] = useState({
         gameId: randomGame ? '0' : '',
         gameStarted: false,
@@ -62,60 +62,59 @@ const JoinGame = ({ setView, randomGame }) => {
         });
     };
 
-
-  const getInfoGame = () => {
-    setLoading(true);
-    contract.methods.getInfoGame(parseInt(gameState.gameId)).send({
-            from: accounts[0],
-            gas: 200000000,
-            gasLimit: 50000,
+    const getInfoGame = () => {
+        setLoading(true);
+        contract.methods.getInfoGame(parseInt(gameState.gameId)).send({
+                from: accounts[0],
+                gas: 200000000,
+                gasLimit: 50000,
+            })
+        .then((logArray) => {
+            console.log(logArray);
+            console.log(parseInt(logArray.events.GetInfo.returnValues._gameId));
+            if (logArray.events.GetInfo.returnValues._found) {
+                setEthBet(parseInt(logArray.events.GetInfo.returnValues._ethAmount));
+                setMaxJoiners(parseInt(logArray.events.GetInfo.returnValues._maxjoiners));
+                setTotalJoiners(parseInt(logArray.events.GetInfo.returnValues._totalJoiners));
+                setInfoFetched(true);
+                setLoading(false);
+            } else {
+                toast.error('Gioco non trovato!');
+                setGameState(prevState => ({...prevState, gameId: randomGame ? '0' : ''}));
+                setLoading(false);
+                setInfoFetched(false);
+            }
         })
-      .then((logArray) => {
-        console.log(logArray);
-        console.log(parseInt(logArray.events.GetInfo.returnValues._gameId));
-        if (logArray.events.GetInfo.returnValues._found) {
-            setEthBet(parseInt(logArray.events.GetInfo.returnValues._ethAmount));
-            setMaxJoiners(parseInt(logArray.events.GetInfo.returnValues._maxjoiners));
-            setTotalJoiners(parseInt(logArray.events.GetInfo.returnValues._totalJoiners));
-            setInfoFetched(true);
+        .catch((error) => {
+            console.error('Error fetching game info:', error);
             setLoading(false);
-        } else {
-            toast.error('Gioco non trovato!');
+            toast.error('Non trovo il gioco selezionato!');
             setGameState(prevState => ({...prevState, gameId: randomGame ? '0' : ''}));
-            setLoading(false);
-            setInfoFetched(false);
-        }
-      })
-      .catch((error) => {
-        console.error('Error fetching game info:', error);
-        setLoading(false);
-        toast.error('Non trovo il gioco selezionato!');
-        setGameState(prevState => ({...prevState, gameId: randomGame ? '0' : ''}));
-    });
-  };
+        });
+    };
     const setResult = (result) => {
         setGameState(prevState => ({...prevState, result: result}));
     };
 
-  const accusePlayer = () => {
-    setLoading(true);
-    contract.methods.accuse(parseInt(gameState.gameId)).send({
-        from: accounts[0],
-        gas: 2000000,
-    })
-    .then((logArray) => {
-        console.log(`Accusation made in game with ID: ${gameState.gameId}`);
-        console.log(logArray);
-        setLoading(false);
-        toast.success('Creatore accusato con successo!');
-        /*TODO: disabilita accusation button*/
-    })
-    .catch((error) => {
-        console.error('Error making accusation:', error);
-        setLoading(false);
-        toast.error('Non ho potuto accusare il creatore!');
-    });
-};
+    const accusePlayer = () => {
+        setLoading(true);
+        contract.methods.accuse(parseInt(gameState.gameId)).send({
+            from: accounts[0],
+            gas: 2000000,
+        })
+        .then((logArray) => {
+            console.log(`Accusation made in game with ID: ${gameState.gameId}`);
+            console.log(logArray);
+            setLoading(false);
+            toast.success('Creatore accusato con successo!');
+        })
+        .catch((error) => {
+            console.error('Error making accusation:', error);
+            setLoading(false);
+            toast.error('Non ho potuto accusare il creatore!');
+        });
+    };
+
     useEffect(() => {
         try {
             contract._events.GameStarted().on('data', event => {
@@ -135,6 +134,32 @@ const JoinGame = ({ setView, randomGame }) => {
             }).on('error', console.error);
         } catch {/** */}
     }, [contract._events.NumberExtracted()]);
+
+    useEffect(() => {
+        try {
+            if (gameState.gameStarted) {
+                contract._events.ReceiveAccuse().on('data', event => {
+                    console.log(event.returnValues);
+                    if (`${event.returnValues._gameId}` === gameState.gameId) {
+                        setAccusePending(true);
+                    }
+                }).on('error', console.error);
+            }
+        } catch {/** */}
+    }, [contract._events.ReceiveAccuse()]);
+
+    useEffect(() => {
+        try {
+            if (gameState.gameStarted) {
+                contract._events.ConfirmRemovedAccuse().on('data', event => {
+                    if (`${event.returnValues._gameId}` === gameState.gameId) {
+                        console.log(event);
+                        setAccusePending(false);
+                    }
+                }).on('error', console.error);
+            }
+        } catch {/** */}
+    }, [contract._events.ConfirmRemovedAccuse()]);
 
     useEffect(() => {
         try {
@@ -229,6 +254,7 @@ const JoinGame = ({ setView, randomGame }) => {
                   cardMatrix={cardMatrix}
                   setResult={setResult}
                   loading={loading}
+                  accusePending={accusePending}
                   accusePlayer={accusePlayer}
                   isBingo={isBingo}
                   submitWinningCombination={submitWinningCombination}
@@ -323,20 +349,20 @@ const LoadingScreen = () => (
     </div>
   );
 
-  const GameBoard = ({ cardMatrix, setResult, loading, accusePlayer, isBingo, submitWinningCombination, contract, accounts, gameState, setGameState }) => (
+  const GameBoard = ({ cardMatrix, setResult, loading, accusePending, accusePlayer, isBingo, submitWinningCombination, contract, accounts, gameState, setGameState }) => (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col items-center">
         <Board size={5} table={cardMatrix} setResult={setResult} />
-        <div className="fixed bottom-4 right-4">
-          <Button
-            variant="contained"
-            onClick={accusePlayer}
-            className="dark:bg-blue-500 dark:hover:bg-blue-600 bg-blue-400 hover:bg-blue-500 text-white items-center shadow-xl transition duration-300 dark:disabled:bg-gray-500 disabled:bg-gray-300"
-            disabled={loading}
-          >
-            {loading ? 'Loading...' : 'Accuse Player'}
-          </Button>
-        </div>
+        <div className="flex flex-row gap-10 items-center justify-center">
+            <Button
+                className="dark:bg-blue-500 dark:hover:bg-blue-600 bg-blue-400 hover:bg-blue-500 text-white items-center shadow-xl transition duration-300 dark:disabled:bg-gray-500 disabled:bg-gray-300"
+                variant="contained"
+                onClick={accusePlayer}
+                disabled={loading || accusePending}
+            >
+            {loading ? 'Loading...' : 'Accusa creatore'}
+        </Button>
+      </div>
       </div>
       <Button
         className="dark:bg-blue-500 dark:hover:bg-blue-600 bg-blue-400 hover:bg-blue-500 text-white items-center shadow-xl transition duration-300 dark:disabled:bg-gray-500 disabled:bg-gray-300"
