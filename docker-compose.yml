@@ -1,11 +1,16 @@
 name: bingo-eth
 services:
+    ganache-cli:
+        container_name: ganache
+        build: ganache-docker
     bingo-client:
+        container_name: bingoeth
         build: .
         volumes:
             - ./:/app
         network_mode: host
         restart: unless-stopped
+        depends_on: [ganache-cli]
         # ports:
         #     - 8080:80
         #     - 3000:3000
