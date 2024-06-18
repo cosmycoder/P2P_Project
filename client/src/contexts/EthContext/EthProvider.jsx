@@ -11,7 +11,7 @@ function EthProvider({ children, setAuth }) {
     async artifact => {
         console.log(process.env.REACT_APP_CHAIN_URL)
       if (artifact) {
-        const web3 = new Web3(Web3.givenProvider || `${process.env.REACT_APP_CHAIN_URL ? process.env.REACT_APP_CHAIN_URL : 'ws://127.0.0.1'}`);
+        const web3 = new Web3(Web3.givenProvider || `${process.env.REACT_APP_CHAIN_URL ? process.env.REACT_APP_CHAIN_URL : 'ws://127.0.0.1:7545'}`);
 
         try {
           accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
