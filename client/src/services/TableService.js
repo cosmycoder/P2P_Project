@@ -3,10 +3,32 @@
  * Keeping this as a reminder not to use this function
 */
 
-import web3 from "web3";
+import {utils} from 'web3';
+
+const winningCombinations = {
+    ROW1: [0, 1, 2, 3, 4],
+    ROW2: [5, 6, 7, 8, 9],
+    ROW3: [10, 11, 12, 13],
+    ROW4: [14, 15, 16, 17, 18],
+    ROW5: [19, 20, 21, 22, 23],
+
+    COL1: [0, 5, 10, 14, 19],
+    COL2: [1, 6, 11, 15, 20],
+    COL3: [2, 7, 16, 21],
+    COL4: [3, 8, 12, 17, 22],
+    COL5: [4, 9, 13, 18, 23],
+
+    DIAG1: [0, 6, 17, 23],
+    DIAG2: [4, 8, 15, 19],
+};
+
+
 function getRandom(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
+
+
+
 
 function hexToBytes(hex) {
     // Remove the 0x prefix if present
@@ -47,7 +69,7 @@ function stringToBytes32(str) {
 
     // Check if the string is too long
     if (byteArray.length > 32) {
-        throw new Error("String is too long to convert to bytes32");
+        throw new Error('String is too long to convert to bytes32');
     }
 
     // Create a buffer of 32 bytes and fill it with zeros
@@ -101,11 +123,11 @@ export function getMatrix(table) {
     let row;
     for (let i = 0, j = 0; i < table.length; i++) {
         if (j === 0 || j % 5 === 0) {
-            if (j && j % 5 === 0) matrix.push(row);
+            if (j && j % 5 === 0) {matrix.push(row);}
             row = [];
         }
         if (i === 12) {
-            row.push("🆓");
+            row.push('🆓');
             j++;
         }
         row.push(table[i]);
@@ -117,14 +139,14 @@ export function getMatrix(table) {
 }
 
 export function generateMerkleTree(table) {
-    console.log(table)
+    console.log(table);
     let merkleTree = [];
 
     // Calc the leaves' hashes + salt
     let tmp = [];
     for (const element of table) {
         // tmp.push(web3.utils.soliditySha3((element.toString() + Math.floor(Math.random() * 10)).toString()));
-        tmp.push(web3.utils.soliditySha3(element.toString()));
+        tmp.push(utils.soliditySha3(element.toString()));
     }
     merkleTree.push(tmp);
 //     if (tmp[j + 1])
@@ -137,9 +159,9 @@ export function generateMerkleTree(table) {
         const nextLevel = [];
         for (let j = 0; j < tmp.length; j += 2) {
             if (tmp[j + 1])
-                nextLevel.push(web3.utils.soliditySha3((tmp[j] + tmp[j + 1].slice(2))));
+                {nextLevel.push(utils.soliditySha3((tmp[j] + tmp[j + 1].slice(2))));}
             else
-                nextLevel.push(web3.utils.soliditySha3((tmp[j] + tmp[j].slice(2)))); // if the level has an odd number of elements, doubles the last element
+                {nextLevel.push(utils.soliditySha3((tmp[j] + tmp[j].slice(2))));} // if the level has an odd number of elements, doubles the last element
         }
         tmp = nextLevel;
         merkleTree.push(nextLevel);
@@ -148,17 +170,17 @@ export function generateMerkleTree(table) {
 }
 
 export const generateMerkleProof = (card, result) => {
-    console.log(card)
-    console.log(result)
-    const proofs = []
+    console.log(card);
+    console.log(result);
+    const proofs = [];
     const merkleTree = generateMerkleTree(card);
-    console.log(merkleTree)
+    console.log(merkleTree);
     const leaves = merkleTree[0];
     for (let i = 0; i < result.length; i++) {
         if (!result[i]) {
             continue;
         }
-        const elementHash = web3.utils.soliditySha3(card[i].toString());
+        const elementHash = utils.soliditySha3(card[i].toString());
         const index = leaves.indexOf(elementHash);
 
         // if (index === -1) {
@@ -183,9 +205,9 @@ export const generateMerkleProof = (card, result) => {
             currentIndex = Math.floor(currentIndex / 2);
         }
         if (index > 15) {
-            let last = proof.pop()
-            proof.push(`${merkleTree[merkleTree.length - 3][merkleTree[merkleTree.length - 3].length - 1]}`)
-            proof.push(last)
+            let last = proof.pop();
+            proof.push(`${merkleTree[merkleTree.length - 3][merkleTree[merkleTree.length - 3].length - 1]}`);
+            proof.push(last);
         }
         proofs.push(proof);
     }
@@ -195,20 +217,32 @@ export const generateMerkleProof = (card, result) => {
     // for (let p of proofs) {
     //     console.log(`Verify ${p[0]} - ${p.slice(2)} - ${merkleTree[merkleTree.length - 1][0]} ` + verifyMerkleProof(p[0], p[1],  merkleTree[merkleTree.length - 1][0], p.slice(2)));
     // }
-}
+};
 
 function verifyMerkleProof(element, index, root, proof) {
-    let hash = web3.utils.soliditySha3(element.toString());
-    console.log(hash)
+    let hash = utils.soliditySha3(element.toString());
+    console.log(hash);
     for (const element of proof) {
         if (index % 2 === 0) {
-            hash = web3.utils.soliditySha3(hash + element.slice(2));
+            hash = utils.soliditySha3(hash + element.slice(2));
         } else {
-            hash = web3.utils.soliditySha3(element + hash.slice(2));
+            hash = utils.soliditySha3(element + hash.slice(2));
         }
 
         // Move to the parent node
         index = Math.floor(index / 2);
     }
     return hash === root;
+}
+
+
+
+export function isWinningCombination(card) {
+    for (const combination in winningCombinations) {
+        const indexes = winningCombinations[combination];
+        if (indexes.every(index => card[index])) {
+            return [true, combination];
+        }
+    }
+    return [false, null];
 }
