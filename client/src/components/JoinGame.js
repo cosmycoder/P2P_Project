@@ -214,6 +214,19 @@ const JoinGame = ({ setView, randomGame }) => {
         }
     }, [gameState.result]);
 
+    useEffect(() => {
+        function beforeUnload(e) {
+          if (!gameState.gameStarted || gameState.gameEnded) return;
+          e.preventDefault();
+        }
+
+        window.addEventListener('beforeunload', beforeUnload);
+
+        return () => {
+          window.removeEventListener('beforeunload', beforeUnload);
+        };
+      }, [gameState.gameStarted, gameState.gameEnded]);
+
   return (
         <div className="flex flex-col justify-center items-center">
           {gameState.gameStarted && (
@@ -285,7 +298,7 @@ const JoinGame = ({ setView, randomGame }) => {
 const LoadingScreen = () => (
     <div className="grid grid-rows-2 gap-4">
       <h1 className="text-center text-2xl text-white">Aspetto che altri giocatori si connettano!</h1>
-      <CircularProgress className="m-auto p-10" />
+      <CircularProgress className="m-auto" />
     </div>
   );
 
