@@ -1,4 +1,5 @@
 #!/bin/bash
+npm install
 source .env
 cd truffle
 ./compile.sh
