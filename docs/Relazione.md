@@ -112,4 +112,4 @@ Steps:
 Eseguiti i passi indicati, inizierà il processo di build del container docker. Dopodiché si avvierà il container che compilerà il contratto, per poi avviare l'applicazione **BingoEth**.
 Una volta terminato il processo di build, sarà possibile accedere all'applicazione tramite browser all'url [http://localhost:80](http://localhost:80).
 
-Gli account configurati su ganache, esposto all'url [https://chain.alteregofiere.com](https://chain.alteregofiere.com) sono i medesimi indicati nella sezione precedente
+Gli account verranno configurati su un'istanza di ganache locale (`127.0.0.1:7545`).
