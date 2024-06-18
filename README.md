@@ -61,7 +61,7 @@ REACT_APP_CHAIN_URL='ws(s)://you_chain_url:port'
 To start the project with docker, edit the .env file inside the root of the project:
 
 ```bash
-export CLIENT_ENV=developement
+export CLIENT_ENV=development
 ```
 
 Here's a recap of all the `.env` files you can setup (it is not mandatory, de defaults values are enough to start the app locally):
@@ -82,4 +82,4 @@ Finally:
 docker compose up
 ```
 
-Now you can access the app at http://localhost:3000 (developement) or http://localhost:80 (production).
+Now you can access the app at http://localhost:3000 (development) or http://localhost:80 (production).

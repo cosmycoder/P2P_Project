@@ -5,7 +5,7 @@ cd truffle
 ./compile.sh
 cd ../client
 npm install
-if [[ "$CLIENT_ENV" == "developement" ]]
+if [[ "$CLIENT_ENV" == "development" ]]
 then
     npm start
 else
