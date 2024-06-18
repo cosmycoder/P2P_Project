@@ -3,6 +3,7 @@ source .env
 cd truffle
 ./compile.sh
 cd ../client
+npm install
 if [[ "$CLIENT_ENV" == "production" ]]
 then
     npm run build

@@ -5,6 +5,7 @@ services:
         volumes:
             - ./:/app
         network_mode: host
+        restart: unless-stopped
         # ports:
         #     - 8080:80
         #     - 3000:3000

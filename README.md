@@ -36,3 +36,25 @@ To deploy the contract:
 cd truffle
 ./compile.sh
 ```
+
+# Docker
+
+To start the project with docker, edit the .env file inside `client`:
+
+```bash
+REACT_APP_CHAIN_URL="http://127.0.0.1:7545"
+```
+
+Then edit the .env file inside the root of the project:
+
+```bash
+export CLIENT_ENV=developement
+```
+
+Finally:
+
+```bash
+docker compose up
+```
+
+Now you can access the app at http://localhost:80
