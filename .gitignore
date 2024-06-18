@@ -15,8 +15,8 @@ truffle/*/contracts
 coverage
 
 # Env
-client/.env
-truffle/.env
+.env
+.env
 .env.local
 .env.development.local
 .env.test.local
