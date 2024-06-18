@@ -213,7 +213,7 @@ const JoinGame = ({ setView, randomGame }) => {
     }, [gameState.result]);
 
   return (
-        <div className="flex flex-col justify-center items-center h-screen">
+        <div className="flex flex-col justify-center items-center">
           {gameState.gameStarted && (
             <h1 className="flex text-black dark:text-white text-center text-2xl">
               {`Numeri estratti: ${extractedNumbers}`}
@@ -292,7 +292,7 @@ const LoadingScreen = () => (
       {!randomGame && (
         <input
           value={gameState.gameId}
-          placeholder="Game ID"
+          placeholder="ID stanza"
           className="text-field"
           onChange={(e) => {
             if (e.target.value === '' || re.test(e.target.value))
@@ -325,21 +325,21 @@ const LoadingScreen = () => (
 
   const GameInfo = ({ gameState, ethBet, maxJoiners, totalJoiners, loading, joinGame, setInfoFetched }) => (
     <div className="flex flex-col justify-center items-center">
-        <div className='dark:border-slate-800
-                       border-slate-200  border-2 pt-5 pb-5 pl-10 pr-10 gap-3 rounded-3xl shadow-lg m-2'>
+        <div className='dark:border-slate-800 dark:bg-slate-600 bg-slate-100
+                       border-slate-200  border-2 mb-20 pt-5 pb-5 pl-10 pr-10 gap-3 rounded-3xl shadow-lg m-2'>
         <Typography
             className="text-center text-black dark:text-white"
             variant="h6"
         >
-            Game ID: {gameState.gameId}
+            🚪 ID stanza: {gameState.gameId}
         </Typography>
         <Typography className="text-center text-black dark:text-white"
                     variant="h6">
-                ETH da scommettere: {ethBet}
+                💰 Puntata: {ethBet} ETH
         </Typography>
         <Typography className="text-center text-black dark:text-white"
                     variant="h6">
-                Giocatori in partita: {totalJoiners}/{maxJoiners}
+                👨‍👩‍👧‍👦 Giocatori in partita: {totalJoiners}/{maxJoiners}
         </Typography>
         </div>
         <div className="grid grid-cols-2 gap-4">
@@ -349,7 +349,7 @@ const LoadingScreen = () => (
             className="dark:bg-blue-500 dark:hover:bg-blue-600 bg-blue-400 hover:bg-blue-500 text-white items-center shadow-xl transition duration-300 dark:disabled:bg-gray-500 disabled:bg-gray-300"
             disabled={gameState.gameId.trim() === '' || loading || gameState.gameId === '0'}
         >
-            {loading ? 'Joining...' : 'Join Game'}
+            {loading ? 'Joining...' : 'Entra nella stanza'}
         </Button>
         <Button
             className="dark:border-blue-500 dark:hover:border-blue-600 dark:text-blue-500 dark:hover:text-blue-600 border-blue-400 hover:border-blue-500 text-blue-400 hover:text-blue-500 items-center shadow-xl transition duration-300"
