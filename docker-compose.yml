@@ -3,6 +3,9 @@ services:
     ganache-cli:
         container_name: ganache
         build: ganache-docker
+        ports:
+            - 7545:7545
+        restart: unless-stopped
     bingo-client:
         container_name: bingoeth
         build: .
