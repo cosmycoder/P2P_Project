@@ -70,7 +70,7 @@ contract Bingo {
     //event to communicate the end of a game to all the joiners and the creator, loser is used if reason is that he cheated
     event NotBingo(int256 indexed _gameId, address player);
 
-    event ConfirmRemovedAccuse(int256 _gameId,bool _value);
+    event ConfirmRemovedAccuse(int256 _gameId);
     event GameEnded(
         int256 indexed _gameId,
         address _winner,
@@ -351,7 +351,7 @@ contract Bingo {
         return uint8(randomNumber);
     }
 
-    function extractNumber(int256 _gameId,bool accused) public {
+    function extractNumber(int256 _gameId, bool accused) public {
         require(gameList[_gameId].numbersExtracted.length <= 75, "All numbers have been extracted!");
         uint8 newNumber = getNewNumber(_gameId);
         int8 i = 1;
@@ -363,6 +363,8 @@ contract Bingo {
         if(accused){
             gameList[_gameId].accusationTime = 0;
             gameList[_gameId].accuser = address(0);
+            emit ConfirmRemovedAccuse(_gameId);
+
         }
         if(gameList[_gameId].numbersExtracted.length < 75){
             emit NumberExtracted(_gameId, newNumber,false);
@@ -379,7 +381,7 @@ contract Bingo {
         gameList[_gameId].accuser = msg.sender;
         emit ReceiveAccuse(_gameId, msg.sender);
     }
-    function checkaccuse(int256 _gameId) public {
+    function checkAccuse(int256 _gameId) public {
         require(_gameId > 0, "Game id is negative!");
         require(gameList[_gameId].creator == msg.sender, "Only the Creator may accuse!");
         require(gameList[_gameId].accusationTime != 0, "Accusation not made");
