@@ -417,6 +417,67 @@ Gli account verranno configurati su un'istanza di ganache locale (`127.0.0.1:754
 
 # Valutazione del consumo di gas
 
+- Il deploy del progetto si consuma una quantita di gas pari a 3653200 Gas
+- La funzione CreateGame si consuma 179890 Gas
+- La funzione JoinGame consuma 131088 Gas
+- La sola funzione accuse consuma 67810 Gas
+- La sola funzione di CheckAccuse consuma ~ 1300+(2500×n) Gas dove n = numero di joiners
+- L'estrazione di un numero ~ 70705 Gas * un massimo di 75 numeri = massimo 5302875 Gas
+- L'estrazione delle informazioni su un game ~ 36536 Gas
+- Stima per la sottomissione di una board con SubmitBoard ~ 40181 Gas
+
+## Valutazione di esempio con un gioco con un creatore e 3 joiners
+
+Ipotiziamo che ci siano stati 37 numeri per aver raggiunto il termine del gioco e che ci siano state 6 accuse (ovviamente non andate a buon fine). Calcoliamo il costo complessivo:
+
+Per calcolare il costo complessivo del consumo di gas considerando le operazioni specificate, ipotizziamo i seguenti dati:
+
+- **Creatore del gioco**: 1
+- **Joiners**: 3
+- **Numeri estratti**: 37
+- **Accuse**: 6
+
+### Calcolo del consumo di gas:
+
+1. **Deploy del progetto**: 3653200 gas
+
+2. **Creazione di un gioco**:
+   - 179890 gas
+
+3. **JoinGame** per 3 joiners:
+   - 131088 * 3 = 393264 gas
+
+4. **Accuse** per 6 accuse:
+   - 67810 * 6 = 406860 gas
+
+5. **CheckAccuse** per 6 accuse e 3 joiners:
+   - Ogni chiamata a `CheckAccuse` con 3 joiners:
+     - 1300 + (2500 * 3) = 1300 + 7500 = 8800 gas
+   - 8800 * 6 = 52800 gas
+
+6. **Estrazione di numeri**:
+   - Numero massimo di estrazioni: 37
+   - 70705 * 37 = 2616085 gas
+
+7. **Estrazione delle informazioni su un gioco**:
+   - 36536 gas (assumiamo 1 chiamata)
+
+8. **Sottomissione della board con SubmitBoard**:
+   - 40181 gas (al caso pessimo)
+
+### Totale del consumo di gas:
+
+Gas totale = 3653200 + 179890 + 393264 + 406860 + 52800 + 2616085 + 36536 + 40181
+
+### Calcolo:
+
+Gas totale = 7949016 + 52800 + 2616085 + 36536 + 40181
+Gas totale = 7949016 + 2716902 + 40181
+Gas totale = 10656099 + 40181
+Gas totale = 10696280 gas
+
+Quindi, il costo complessivo del consumo di gas per le operazioni descritte, considerando un creatore del gioco e 3 joiners, con 37 numeri estratti e 6 accuse, è di circa 10,696,280 gas.
+
 
 # Potenziali vulnerabilità
 
