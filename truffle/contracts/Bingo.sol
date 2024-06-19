@@ -16,6 +16,7 @@ contract Bingo {
         bytes32 creatorMerkleRoot;
         mapping(address => bytes32) joinerMerkleRoots; // Updated to a mapping
         uint8[] numbersExtracted;
+        uint weiUsed;
         uint accusationTime;
         address accuser;
     }
@@ -37,7 +38,7 @@ contract Bingo {
 /**            Events                     **/
 /***************************************** */
 
-    event GameCreated(int256 indexed _gameId, uint256 _maxJoiners,uint256 _totalJoiners); //  Event to log game creation
+    event GameCreated(int256 indexed _gameId, uint256 _maxJoiners, uint256 _totalJoiners); //  Event to log game creation
     event Log(string message);
     //TODO: implementa piu persone
     event GameJoined(
@@ -74,7 +75,9 @@ contract Bingo {
     event GameEnded(
         int256 indexed _gameId,
         address _winner,
-        uint256 _amountWon,
+        uint256 _amountWonWei,
+        uint256 _creatorRefundWei,
+        bool _creatorWon,
         WinningReasons _reason
     );
 
@@ -340,6 +343,7 @@ contract Bingo {
     }
 
     function extractNumber(int256 _gameId, bool accused) public {
+        uint startGas = gasleft();
         require(gameList[_gameId].numbersExtracted.length <= 75, "All numbers have been extracted!");
         uint8 newNumber = getNewNumber(_gameId);
         int8 i = 1;
@@ -357,8 +361,10 @@ contract Bingo {
         if(gameList[_gameId].numbersExtracted.length < 75){
             emit NumberExtracted(_gameId, newNumber,false);
         }else{
-            emit GameEnded(_gameId, gameList[_gameId].creator, gameList[_gameId].ethBalance, WinningReasons.BINGO);
+            emit GameEnded(_gameId, msg.sender, gameList[_gameId].ethBalance * 1 ether, 0, true, WinningReasons.BINGO);
+            payable(msg.sender).transfer(gameList[_gameId].ethBalance * 1 ether);
         }
+        gameList[_gameId].weiUsed += (startGas - gasleft()) * tx.gasprice;
     }
 
     function accuse (int256 _gameId) public {
@@ -382,7 +388,7 @@ contract Bingo {
             // TODO: Pay all remaining players
             // Implement the logic to pay remaining players here
 
-            emit GameEnded(_gameId, address(0), gameList[_gameId].ethBalance, WinningReasons.CREATOR_STALLED);
+            emit GameEnded(_gameId, address(0), gameList[_gameId].ethBalance, 0, false, WinningReasons.CREATOR_STALLED);
             uint prize = (gameList[_gameId].ethBalance * 1 ether) / gameList[_gameId].totalJoiners;
             for (uint i = 0;i < gameList[_gameId].totalJoiners; i++) {
                 payable(gameList[_gameId].joiners[i]).transfer(prize);
@@ -428,7 +434,7 @@ contract Bingo {
                        : gameList[_gameId].joinerMerkleRoots[msg.sender];
         bool isNumberExtracted = false;
         for (uint8 i = 0; i < _merkleProofs.length; i++) {
-            isNumberExtracted = false;
+            isNumberExtracted = true;
             for (uint8 j = 0; j < gameList[_gameId].numbersExtracted.length; j++) {
                 if (gameList[_gameId].numbersExtracted[j] == stringToUint(bytes32ToString(_merkleProofs[i][0]))){
                     isNumberExtracted = true;
@@ -440,8 +446,17 @@ contract Bingo {
                 return;
             }
         }
-        emit GameEnded(_gameId, msg.sender, gameList[_gameId].ethBalance, WinningReasons.BINGO);
-        payable(msg.sender).transfer(gameList[_gameId].ethBalance * 1 ether);
+        if (msg.sender != gameList[_gameId].creator) {
+            uint gameWeiAmount = gameList[_gameId].ethBalance * 1 ether;
+            uint prize = gameWeiAmount - gameList[_gameId].weiUsed;
+
+            emit GameEnded(_gameId, msg.sender, prize, gameList[_gameId].weiUsed, false, WinningReasons.BINGO);
+            payable(msg.sender).transfer(prize);
+            payable(gameList[_gameId].creator).transfer(gameList[_gameId].weiUsed);
+        } else {
+            emit GameEnded(_gameId, msg.sender, gameList[_gameId].ethBalance * 1 ether, 0, true, WinningReasons.BINGO);
+            payable(msg.sender).transfer(gameList[_gameId].ethBalance * 1 ether);
+        }
 
     }
 }

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button, Typography, CircularProgress } from '@mui/material';
 import toast from 'react-hot-toast';
-import web3 from 'web3';
+import { utils } from 'web3';
 
 import useEth from '../contexts/EthContext/useEth';
 import Board from './Board';
@@ -28,6 +28,8 @@ const JoinGame = ({ setView, randomGame }) => {
         amountWon: 0,
         winningAddress: '',
         creatorRefund: 0,
+        creatorWon : null,
+        winningReason : null,
     });
     const [cardMatrix, setCardMatrix] = useState();
     // const subscribedToNumbers = false;
@@ -46,7 +48,7 @@ const JoinGame = ({ setView, randomGame }) => {
             from: accounts[0],
             gas: 20000000,
             // gasLimit: 180000,
-            value: web3.utils.toWei(ethBet, 'ether')
+            value: utils.toWei(ethBet, 'ether')
 
         })
             .then((logArray) => {
@@ -202,15 +204,17 @@ const JoinGame = ({ setView, randomGame }) => {
                             ...prevState,
                             gameStarted : false,
                             gameEnded : true,
-                            amountWon : event.returnValues._amountWon,
+                            amountWon : event.returnValues._amountWonWei,//utils.fromWei(event.returnValues._amountWonWei, 'ether'),
                             winningAddress : event.returnValues._winner.toLowerCase(),
-                            creatorRefund : event.returnValues._creatorRefund,
+                            creatorRefund : utils.fromWei(event.returnValues._creatorRefundWei, 'ether'),
+                            winningReason : event.returnValues._reason,
+                            creatorWon : event.returnValues._creatorWon,
                         }));
                     }
                 }).on('error', console.error);
             }
         } catch {/** */}
-    }, [contract._events.GameEnded()]);
+    }, [contract, contract._events, gameState.gameStarted, gameState.gameEnded, contract._events.GameEnded()]);
 
     useEffect(() => {
         if (!gameState.result) {return;}

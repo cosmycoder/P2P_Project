@@ -2,16 +2,17 @@ import { Button, Typography } from '@mui/material';
 const Result = ({accounts, maxPlayers, state, setView}) => {
     console.log(state.amountWon, maxPlayers);
     const winningMessage = state.winningAddress === accounts[0].toLowerCase()
-        ? `🏆 Congratulazioni! Hai vinto ${state.amountWon} ETH! 🏆`
+        ? `🏆 Congratulazioni! Hai vinto ${Number(state.amountWon)} ETH! 🏆`
         : state.winningAddress === '0x0000000000000000000000000000000000000000'
         ? `🫢 Il creatore si è bloccato, la sua quota è stata divisa fra tutti i giocatori (${Number(state.amountWon)/maxPlayers} ETH per ogni giocatore) 🫢`
-        : `🙁 Il giocatore ${state.winningAddress} ha vinto ${state.amountWon} ETH 🙁`;
+        : `🙁 Il giocatore ${state.winningAddress} ha vinto ${Number(state.amountWon)} ETH 🙁`;
     // if (state.winningAddress !== accounts[0].toLowerCase()) {
     //     transferEth(contract, accounts, state, ethBet);
     // }
     return (
         <div className="flex flex-col items-center justify-center gap-4">
             <Typography className="text-black dark:text-white text-center" variant="h6">{winningMessage}</Typography>
+            <Typography className="text-black dark:text-white text-center" variant="h6">Il creatore è stato rimborsato di {state.creatorRefund} ETH</Typography>
             {/* <Typography className="text-black dark:text-white text-center" variant="h6">{`Il creatore è stato rimborsato di ${utils.fromWei(state.creatorRefund, "ether")} ETH`}</Typography> */}
             <div className="">
                 <Button
