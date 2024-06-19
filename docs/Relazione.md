@@ -478,6 +478,50 @@ Gas totale = 10696280 gas
 
 Quindi, il costo complessivo del consumo di gas per le operazioni descritte, considerando un creatore del gioco e 3 joiners, con 37 numeri estratti e 6 accuse, è di circa 10,696,280 gas.
 
+Per calcolare quanto spende un joiner e quanto spende il creatore del gioco in base al consumo di gas specificato, consideriamo che i joiner possono eseguire tutte le operazioni elencate:
+
+**Dati forniti:**
+- Creatore del gioco: 1
+- Joiners: 3
+- Numeri estratti: 37
+- Accuse: 6
+
+**Consumo totale di gas:** 10,696,280 gas
+
+### Calcolo del consumo di gas per ciascun partecipante:
+
+#### Creatore del gioco:
+1. **Deploy del progetto**: 3,653,200 gas
+2. **Creazione di un gioco**: 179,890 gas
+3. **JoinGame** per 3 joiners: 393,264 gas (si presume che il creatore del gioco non esegua JoinGame, quindi consideriamo solo il costo iniziale per la creazione)
+4. **Accuse**: 406,860 gas
+5. **CheckAccuse**: 52,800 gas (calcolato come 8800 gas per chiamata * 6 accuse)
+6. **Estrazione di numeri**: 2,616,085 gas (37 estrazioni)
+7. **Estrazione delle informazioni su un gioco**: 36,536 gas (1 chiamata)
+8. **Sottomissione della board con SubmitBoard**: 40,181 gas (al caso pessimo)
+
+**Totale per il creatore**:
+\[
+3653200 + 179890 + 393264 + 406860 + 52800 + 2616085 + 36536 + 40181 = 6763376 \text{ gas}
+\]
+
+#### Joiner:
+1. **JoinGame**: 131,088 gas (per ciascuno dei 3 joiners)
+2. **Accuse**: 67,810 gas (per ciascuna delle 6 accuse)
+3. **CheckAccuse**: 52,800 gas (stesso costo totale del creatore, poiché coinvolto solo come partecipante)
+4. **Estrazione delle informazioni su un gioco**: 36,536 gas (1 chiamata)
+5. **Sottomissione della board con SubmitBoard**: 40,181 gas (al caso pessimo)
+
+**Totale per un joiner**:
+\[
+131088 + 67810 + 52800 + 36536 + 40181 = 329815 \text{ gas}
+\]
+
+### Conclusione:
+
+- **Creatore del gioco**: Spenderebbe circa **6,763,376 gas** per tutte le operazioni descritte.
+- **Joiner**: Ogni joiner spenderebbe circa **329,815 gas** per le operazioni di JoinGame, Accuse, Estrazione delle informazioni su un gioco e Sottomissione della board con SubmitBoard.
+
 
 # Potenziali vulnerabilità
 
