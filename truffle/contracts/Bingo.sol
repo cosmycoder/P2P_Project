@@ -438,7 +438,7 @@ contract Bingo {
                        : gameList[_gameId].joinerMerkleRoots[msg.sender];
         bool isNumberExtracted = false;
         for (uint8 i = 0; i < _merkleProofs.length; i++) {
-            isNumberExtracted = true;
+            isNumberExtracted = false;
             for (uint8 j = 0; j < gameList[_gameId].numbersExtracted.length; j++) {
                 if (gameList[_gameId].numbersExtracted[j] == stringToUint(bytes32ToString(_merkleProofs[i][0]))){
                     isNumberExtracted = true;

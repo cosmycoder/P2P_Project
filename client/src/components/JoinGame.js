@@ -59,6 +59,7 @@ const JoinGame = ({ setView, randomGame }) => {
             setLoading(false);
             toast.error('Non posso entrare nel gioco selezionato!');
             setGameState(prevState => ({...prevState, gameId: randomGame ? '0' : ''}));
+            setView("");
         });
     };
 
@@ -73,6 +74,7 @@ const JoinGame = ({ setView, randomGame }) => {
             console.log(logArray);
             console.log(parseInt(logArray.events.GetInfo.returnValues._gameId));
             if (logArray.events.GetInfo.returnValues._found) {
+                setGameState(prevState => ({...prevState, gameId: `${logArray.events.GetInfo.returnValues._gameId}`}));
                 setEthBet(parseInt(logArray.events.GetInfo.returnValues._ethAmount));
                 setMaxJoiners(parseInt(logArray.events.GetInfo.returnValues._maxjoiners));
                 setTotalJoiners(parseInt(logArray.events.GetInfo.returnValues._totalJoiners));
@@ -211,6 +213,19 @@ const JoinGame = ({ setView, randomGame }) => {
             setIsBingo(false);
         }
     }, [gameState.result]);
+
+    useEffect(() => {
+        function beforeUnload(e) {
+          if (!gameState.gameStarted || gameState.gameEnded) return;
+          e.preventDefault();
+        }
+
+        window.addEventListener('beforeunload', beforeUnload);
+
+        return () => {
+          window.removeEventListener('beforeunload', beforeUnload);
+        };
+      }, [gameState.gameStarted, gameState.gameEnded]);
 
   return (
         <div className="flex flex-col justify-center items-center">
@@ -364,7 +379,6 @@ const LoadingScreen = () => (
 
   const GameBoard = ({ cardMatrix, setResult, loading, accusePending, accusePlayer, isBingo, submitWinningCombination, contract, accounts, gameState, setGameState }) => (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col items-center">
         <Board size={5} table={cardMatrix} setResult={setResult} />
         <div className="flex flex-row gap-10 items-center justify-center">
             <Button
@@ -375,7 +389,6 @@ const LoadingScreen = () => (
             >
             {loading ? 'Loading...' : 'Accusa creatore'}
         </Button>
-      </div>
       </div>
       <Button
         className="dark:bg-blue-500 dark:hover:bg-blue-600 bg-blue-400 hover:bg-blue-500 text-white items-center shadow-xl transition duration-300 dark:disabled:bg-gray-500 disabled:bg-gray-300"

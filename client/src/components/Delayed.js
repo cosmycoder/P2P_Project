@@ -17,7 +17,7 @@ const Delayed = ({ children, loadingMessage, waitBeforeShow = 500}) => {
                 children : (
                     <div className="grid grid-rows-2 gap-4">
                         <h1 className="text-center text-2xl text-black dark:text-white">{`${loadingMessage}`}</h1>
-                        <CircularProgress className="m-auto"/>
+                        <CircularProgress className="m-auto p-2"/>
                     </div>
                 )
             }
