@@ -121,14 +121,14 @@ Come si vede dall'immagine (Figura 6) abbiamo:
 
 #### Lato Joiner della stanza
 
-![Schermata di gioco per i joiner](./immagini/TabellaJoiner.png)
+![Schermata di gioco per i joiner](./immagini/TabellaJoiner.png){ width=50% }
 
 Dato che solo il creatore del gioco può estrarre i numeri, abbiamo dato ai joiner della stanza la possibilità di denunciarlo se cerca di bloccare il gioco per far allontanare i giocatori. Per questo motivo, è stato aggiunto un pulsante `Denuncia`. Se premuto, questo pulsante rimuove il creatore dalla partita dopo un certo numero di secondi, terminando il gioco.
 
 Altre possibili implementazioni avrebbero potuto includere una logica che trasformava chi denunciava nel nuovo creatore. Tuttavia, abbiamo optato per una soluzione più semplice. Se la denuncia viene confermata, il creatore dovrà estrarre un numero entro un certo limite di tempo. Se lo fa, il gioco prosegue normalmente; altrimenti, tutti i giocatori riceveranno indietro il proprio denaro, insieme a una percentuale dei soldi scommessi dal creatore del gioco.
 
 
-![Schermata di denuncia per i joiner](./immagini/DenunciaJoiner.png)
+![Schermata di denuncia per i joiner](./immagini/DenunciaJoiner.png){ width=50% }
 
 ## Lato smart contract
 
@@ -145,7 +145,7 @@ Sotto vediamo i codici per queste funzionalita:
 
 La funzione `createGame viene chiamata per avviare una nuova partita. Verifica i parametri di input come il numero massimo di giocatori consentiti e l'ammontare della scommessa. Successivamente, genera un ID univoco per la partita e inizializza un nuovo oggetto di gioco nella lista. Vengono impostati vari parametri, tra cui il creatore della partita, l'ammontare della scommessa, il merkle root delle carte del creatore, eccetera. Infine, aggiunge la partita alla lista dei giochi disponibili e emette un evento per segnalare la creazione della partita.
 
-```solidity
+```java
 function createGame(uint _maxJoiners, uint _betAmount, bytes32 _cardMerkleRoot)
 public payable {
     // Requisiti di input
@@ -195,7 +195,7 @@ public payable {
 
 La funzione `extractNumber` gestisce l'estrazione dei numeri nel gioco. Verifica se tutti i 75 numeri consentiti sono stati estratti. Genera un nuovo numero utilizzando una funzione per generare numeri casuali e controlla se è già stato estratto. Se il numero è un duplicato, ne genera uno nuovo fino a trovare un numero unico. Aggiunge quindi il numero estratto alla lista dei numeri estratti per il gioco corrispondente. Se viene specificato, resetta l'accusa e l'accusatore nel gioco. Infine, emette eventi per informare sul numero estratto o segnalare la fine del gioco se tutti i numeri sono stati estratti.
 
-```solidity
+```java
 function extractNumber(int256 _gameId,bool accused) public {
     // Controlla se tutti i numeri sono stati estratti
     require(gameList[_gameId].numbersExtracted.length <= 75,
@@ -237,7 +237,7 @@ function extractNumber(int256 _gameId,bool accused) public {
 
 Per salvare tutte le informazioni sui dati riguardanti un game abbiamo scelto di optare per una struct, sotto il codice:
 
-```solidity
+```java
 struct Info {
         address creator;
         address[] joiners;
