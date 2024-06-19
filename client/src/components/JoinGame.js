@@ -65,15 +65,22 @@ const JoinGame = ({ setView, randomGame }) => {
 
     const getInfoGame = () => {
         setLoading(true);
-        contract.methods.getInfoGame(parseInt(gameState.gameId)).send({
+        const seed = Math.floor(Math.random() * 10000000);
+        let id = gameState.gameId
+        if (randomGame && gameState.gameId != '0') {
+            setGameState(prevState => ({...prevState, gameId:  '0'}));
+            id = '0'
+        }
+
+        contract.methods.getInfoGame(parseInt(id), seed).send({
                 from: accounts[0],
                 gas: 200000000,
-                gasLimit: 50000,
             })
         .then((logArray) => {
             console.log(logArray);
             console.log(parseInt(logArray.events.GetInfo.returnValues._gameId));
             if (logArray.events.GetInfo.returnValues._found) {
+                console.log(logArray.events.GetInfo.returnValues)
                 setGameState(prevState => ({...prevState, gameId: `${logArray.events.GetInfo.returnValues._gameId}`}));
                 setEthBet(parseInt(logArray.events.GetInfo.returnValues._ethAmount));
                 setMaxJoiners(parseInt(logArray.events.GetInfo.returnValues._maxjoiners));
@@ -81,7 +88,12 @@ const JoinGame = ({ setView, randomGame }) => {
                 setInfoFetched(true);
                 setLoading(false);
             } else {
-                toast.error('Gioco non trovato!');
+                if (randomGame) {
+                    toast.error('Non ci sono giochi disponibili!');
+
+                } else {
+                    toast.error('Gioco non trovato!');
+                }
                 setGameState(prevState => ({...prevState, gameId: randomGame ? '0' : ''}));
                 setLoading(false);
                 setInfoFetched(false);

@@ -248,6 +248,19 @@ const CreateRoom = ({setView}) => {
         };
       }, [gameState, gameState.gameStarted, gameState.gameEnded]);
 
+      useEffect(() => {
+        function beforeUnload(e) {
+          if (!waiting) return;
+          e.preventDefault();
+        }
+
+        window.addEventListener('beforeunload', beforeUnload);
+
+        return () => {
+          window.removeEventListener('beforeunload', beforeUnload);
+        };
+      }, [waiting]);
+
 	return (
         <div className="flex flex-col">
         {!gameState.gameEnded && gameState.gameStarted && (
