@@ -195,7 +195,7 @@ const JoinGame = ({ setView, randomGame }) => {
 
     useEffect(() => {
         try {
-            if (gameState.gameStarted && !gameState.gameEnded) {
+            if (gameState.gameStarted) {
                 contract._events.GameEnded().on('data', event => {
                     console.log(event.returnValues);
                     if (`${event.returnValues._gameId}` === gameState.gameId) {
