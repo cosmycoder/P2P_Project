@@ -194,10 +194,8 @@ const JoinGame = ({ setView, randomGame }) => {
     }, [contract._events.NotBingo()]);
 
     useEffect(() => {
-        console.log("ACAB");
         try {
             if (gameState.gameStarted) {
-                console.log("ACAB 2")
                 contract._events.GameEnded().on('data', event => {
                     console.log(event.returnValues);
                     if (`${event.returnValues._gameId}` === gameState.gameId) {

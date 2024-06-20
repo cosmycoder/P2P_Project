@@ -149,10 +149,8 @@ const CreateRoom = ({setView}) => {
     }, [contract._events.ConfirmRemovedAccuse()]);
 
     useEffect(() => {
-        console.log("ACAB");
         try {
             if (gameState.gameStarted) {
-                console.log("ACAB 2")
                 contract._events.GameEnded().on('data', event => {
                     console.log(event.returnValues);
                     if (parseInt(event.returnValues._gameId) === gameState.gameId) {
