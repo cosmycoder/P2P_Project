@@ -194,8 +194,10 @@ const JoinGame = ({ setView, randomGame }) => {
     }, [contract._events.NotBingo()]);
 
     useEffect(() => {
+        console.log("ACAB");
         try {
             if (gameState.gameStarted) {
+                console.log("ACAB 2")
                 contract._events.GameEnded().on('data', event => {
                     console.log(event.returnValues);
                     if (`${event.returnValues._gameId}` === gameState.gameId) {
@@ -204,7 +206,7 @@ const JoinGame = ({ setView, randomGame }) => {
                             ...prevState,
                             gameStarted : false,
                             gameEnded : true,
-                            amountWon : event.returnValues._amountWonWei,//utils.fromWei(event.returnValues._amountWonWei, 'ether'),
+                            amountWon : utils.fromWei(event.returnValues._amountWonWei, 'ether'),
                             winningAddress : event.returnValues._winner.toLowerCase(),
                             creatorRefund : utils.fromWei(event.returnValues._creatorRefundWei, 'ether'),
                             winningReason : event.returnValues._reason,
@@ -214,7 +216,7 @@ const JoinGame = ({ setView, randomGame }) => {
                 }).on('error', console.error);
             }
         } catch {/** */}
-    }, [contract, contract._events, gameState.gameStarted, gameState.gameEnded, contract._events.GameEnded()]);
+    }, [contract, contract._events, contract._events.GameEnded()]);
 
     useEffect(() => {
         if (!gameState.result) {return;}
