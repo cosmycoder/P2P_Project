@@ -1,7 +1,7 @@
 import { Button, CircularProgress } from '@mui/material';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import web3 from 'web3';
+import { utils } from 'web3';
 
 import useEth from '../contexts/EthContext/useEth';
 import Board from './Board';
@@ -25,6 +25,8 @@ const CreateRoom = ({setView}) => {
         amountWon: 0,
         winningAddress: '',
         creatorRefund: 0,
+        creatorWon : null,
+        winningReason : null,
     });
     const [cardMatrix, setCardMatrix] = useState([]);
     const [canExtract, setCanExtract] = useState(true);
@@ -54,7 +56,7 @@ const CreateRoom = ({setView}) => {
             .send({
                     from: accounts[0],
                     gas: 1000000,
-                    value: web3.utils.toWei(_ethBet, 'ether')
+                    value: utils.toWei(_ethBet, 'ether')
                 })
             .then((logArray) => {
                 console.log(logArray);
@@ -157,9 +159,11 @@ const CreateRoom = ({setView}) => {
                             ...prevState,
                             gameStarted : false,
                             gameEnded : true,
-                            amountWon : event.returnValues._amountWon,
+                            amountWon : utils.fromWei(event.returnValues._amountWonWei, 'ether'),
                             winningAddress : event.returnValues._winner.toLowerCase(),
-                            creatorRefund : event.returnValues._creatorRefund,
+                            creatorRefund : utils.fromWei(event.returnValues._creatorRefundWei, 'ether'),
+                            winningReason : event.returnValues._reason,
+                            creatorWon : event.returnValues._creatorWon,
                         }));
                         setWaiting(false);
                         setAccused(false);
@@ -247,6 +251,19 @@ const CreateRoom = ({setView}) => {
           window.removeEventListener('beforeunload', beforeUnload);
         };
       }, [gameState, gameState.gameStarted, gameState.gameEnded]);
+
+      useEffect(() => {
+        function beforeUnload(e) {
+          if (!waiting) return;
+          e.preventDefault();
+        }
+
+        window.addEventListener('beforeunload', beforeUnload);
+
+        return () => {
+          window.removeEventListener('beforeunload', beforeUnload);
+        };
+      }, [waiting]);
 
 	return (
         <div className="flex flex-col">

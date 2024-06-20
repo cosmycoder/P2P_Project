@@ -16,6 +16,7 @@ contract Bingo {
         bytes32 creatorMerkleRoot;
         mapping(address => bytes32) joinerMerkleRoots; // Updated to a mapping
         uint8[] numbersExtracted;
+        uint weiUsed;
         uint accusationTime;
         address accuser;
     }
@@ -37,7 +38,7 @@ contract Bingo {
 /**            Events                     **/
 /***************************************** */
 
-    event GameCreated(int256 indexed _gameId, uint256 _maxJoiners,uint256 _totalJoiners); //  Event to log game creation
+    event GameCreated(int256 indexed _gameId, uint256 _maxJoiners, uint256 _totalJoiners); //  Event to log game creation
     event Log(string message);
     //TODO: implementa piu persone
     event GameJoined(
@@ -74,7 +75,9 @@ contract Bingo {
     event GameEnded(
         int256 indexed _gameId,
         address _winner,
-        uint256 _amountWon,
+        uint256 _amountWonWei,
+        uint256 _creatorRefundWei,
+        bool _creatorWon,
         WinningReasons _reason
     );
 
@@ -104,19 +107,17 @@ contract Bingo {
         return gameList[_gameId];
     }
 
-    function getInfoGame(int256 _gameId) public {
+    function getInfoGame(int256 _gameId, uint seed) public {
         // Verifica se ci sono giochi disponibili
         require(_gameId >= 0, "Game ID must be greater than 0!");
-        if(_gameId == 0){
-            int256 gameId = getRandomGame();
-            if (gameId <= 0){
+        if(_gameId == 0) {
+            int256 gameId = getRandomGame(seed);
+            if (gameId <= 0)
                 emit GetInfo(_gameId, 0, 0, 0, false);
-                return;
-            }else{
+            else
                 emit GetInfo(gameId, gameList[gameId].maxJoiners, gameList[gameId].totalJoiners, gameList[gameId].betAmount, true);
-                return;
-            }
-        }else{
+
+        } else {
             if(findIndex(_gameId) > elencoGiochiDisponibili.length)
                 emit GetInfo(_gameId, 0, 0, 0, false);
                 // revert("Reverted because game is not available!");
@@ -126,20 +127,20 @@ contract Bingo {
     }
 
 
-    function getRandomNumber(uint256 _max) private view returns (uint256) {
+    function getRandomNumber(uint256 _max, uint seed) private view returns (uint256) {
        require(_max > 0, "Max must be greater than 0");
         // Generate the random number
-        uint randomHash = uint(keccak256(abi.encodePacked(block.timestamp, block.difficulty, msg.sender)));
+        uint randomHash = uint(keccak256(abi.encodePacked(seed, block.timestamp, block.difficulty, msg.sender)));
         // Ensure the result is within the desired range
         return (randomHash % _max);
     }
 
-    function getRandomGame() private view returns (int256 idGiocoCasuale) {
+    function getRandomGame(uint seed) private view returns (int256 idGiocoCasuale) {
         // Verifica se ci sono giochi disponibili
         if (elencoGiochiDisponibili.length == 0) {
             return -1;
         }
-        uint256 indiceCasuale = getRandomNumber(elencoGiochiDisponibili.length);
+        uint256 indiceCasuale = getRandomNumber(elencoGiochiDisponibili.length, seed);
         idGiocoCasuale = elencoGiochiDisponibili[indiceCasuale];// Ottiene l'ID del gioco corrispondente all'indice casuale
         //removeFromGiochiDisponibili(idGiocoCasuale);// Rimuove il gioco dalla lista degli ID disponibili se il massimo num di giocatori e' stato superato
         return idGiocoCasuale;
@@ -261,7 +262,7 @@ contract Bingo {
 
     function createGame(uint _maxJoiners, uint _betAmount, bytes32 _cardMerkleRoot) public payable {
         require(_maxJoiners > 0, "Max joiners must be greater than 0");
-        require(_betAmount > 0, "Bet amount must be greater than 0");
+        require(_betAmount <= 1000, "Max bet amount is 1000 ETH");
         require(msg.sender.balance/1 ether >= _betAmount, "Cannot bet more than you can afford!");
         require(msg.value == _betAmount*1 ether, "Please send exactly the amount you want to bet!");
         int256 gameId = getGameId();
@@ -292,49 +293,39 @@ contract Bingo {
 
 
     function joinGame(int256 _gameId, bytes32 _cardMerkleRoot) public payable {
-        require(_gameId >= 0, "Game ID must be greater than 0!");
+        require(_gameId > 0, "Game ID must be greater than 0!");
         require(elencoGiochiDisponibili.length > 0, "No available games!");
 
-        int256 chosenGameId;
-        if (_gameId == 0) {
-            do {
-                chosenGameId = getRandomGame();
-            } while (gameList[chosenGameId].creator == msg.sender);
-
-        } else {
-            chosenGameId = _gameId;
-        }
         //check if the game is available and if the player is not the creator
-        require(chosenGameId > 0, "Chosen id negative!");
-        require(gameList[chosenGameId].totalJoiners < gameList[chosenGameId].maxJoiners, "Game already taken!");
-        require(gameList[chosenGameId].creator != msg.sender, "You can't join a game created by yourself!");
-        require(gameList[chosenGameId].creatorMerkleRoot != _cardMerkleRoot, "Invalid merkle root!");
-        require(msg.sender.balance/1 ether >= gameList[chosenGameId].betAmount, "Cannot bet more than you can afford!");
-        require(msg.value/1 ether == gameList[chosenGameId].betAmount, "Please send the correct bet amount!");
+        require(gameList[_gameId].totalJoiners < gameList[_gameId].maxJoiners, "Game already taken!");
+        require(gameList[_gameId].creator != msg.sender, "You can't join a game created by yourself!");
+        require(gameList[_gameId].creatorMerkleRoot != _cardMerkleRoot, "Invalid merkle root!");
+        require(msg.sender.balance/1 ether >= gameList[_gameId].betAmount, "Cannot bet more than you can afford!");
+        require(msg.value/1 ether == gameList[_gameId].betAmount, "Please send the correct bet amount!");
 
-        for (uint i = 0; i < gameList[chosenGameId].joiners.length; i++) {
+        for (uint i = 0; i < gameList[_gameId].joiners.length; i++) {
             require(
-                gameList[chosenGameId]
-                    .joinerMerkleRoots[gameList[chosenGameId]
+                gameList[_gameId]
+                    .joinerMerkleRoots[gameList[_gameId]
                     .joiners[i]] != _cardMerkleRoot, "Invalid merkle root!");
         }
         //add the player to the game
-        gameList[chosenGameId].joiners.push(msg.sender);
-        gameList[chosenGameId].totalJoiners++;
-        gameList[chosenGameId].ethBalance += gameList[chosenGameId].betAmount;
-        gameList[chosenGameId].joinerMerkleRoots[msg.sender] = _cardMerkleRoot;
+        gameList[_gameId].joiners.push(msg.sender);
+        gameList[_gameId].totalJoiners++;
+        gameList[_gameId].ethBalance += gameList[_gameId].betAmount;
+        gameList[_gameId].joinerMerkleRoots[msg.sender] = _cardMerkleRoot;
 
         emit GameJoined(
-            chosenGameId,
-            gameList[chosenGameId].creator,
+            _gameId,
+            gameList[_gameId].creator,
             msg.sender,
-            gameList[chosenGameId].maxJoiners,
-            gameList[chosenGameId].totalJoiners,
-            gameList[chosenGameId].ethBalance
+            gameList[_gameId].maxJoiners,
+            gameList[_gameId].totalJoiners,
+            gameList[_gameId].ethBalance
         );
-        if(gameList[chosenGameId].totalJoiners == gameList[chosenGameId].maxJoiners){
-            removeFromGiochiDisponibili(chosenGameId);
-            emit GameStarted(chosenGameId);
+        if(gameList[_gameId].totalJoiners == gameList[_gameId].maxJoiners){
+            removeFromGiochiDisponibili(_gameId);
+            emit GameStarted(_gameId);
         }
     }
 
@@ -352,6 +343,7 @@ contract Bingo {
     }
 
     function extractNumber(int256 _gameId, bool accused) public {
+        uint startGas = gasleft();
         require(gameList[_gameId].numbersExtracted.length <= 75, "All numbers have been extracted!");
         uint8 newNumber = getNewNumber(_gameId);
         int8 i = 1;
@@ -369,7 +361,10 @@ contract Bingo {
         if(gameList[_gameId].numbersExtracted.length < 75){
             emit NumberExtracted(_gameId, newNumber,false);
         }else{
-            emit GameEnded(_gameId, gameList[_gameId].creator, gameList[_gameId].ethBalance, WinningReasons.BINGO);        }
+            emit GameEnded(_gameId, msg.sender, gameList[_gameId].ethBalance * 1 ether, 0, true, WinningReasons.BINGO);
+            payable(msg.sender).transfer(gameList[_gameId].ethBalance * 1 ether);
+        }
+        gameList[_gameId].weiUsed += (startGas - gasleft()) * tx.gasprice;
     }
 
     function accuse (int256 _gameId) public {
@@ -393,7 +388,7 @@ contract Bingo {
             // TODO: Pay all remaining players
             // Implement the logic to pay remaining players here
 
-            emit GameEnded(_gameId, address(0), gameList[_gameId].ethBalance, WinningReasons.CREATOR_STALLED);
+            emit GameEnded(_gameId, address(0), gameList[_gameId].ethBalance, 0, false, WinningReasons.CREATOR_STALLED);
             uint prize = (gameList[_gameId].ethBalance * 1 ether) / gameList[_gameId].totalJoiners;
             for (uint i = 0;i < gameList[_gameId].totalJoiners; i++) {
                 payable(gameList[_gameId].joiners[i]).transfer(prize);
@@ -427,6 +422,7 @@ contract Bingo {
         }
         return result;
     }
+
     function submitCard(int256 _gameId, bytes32[][] memory _merkleProofs) public {
         require(_gameId > 0, "Game id is negative!");
         require(
@@ -450,8 +446,17 @@ contract Bingo {
                 return;
             }
         }
-        emit GameEnded(_gameId, msg.sender, gameList[_gameId].ethBalance, WinningReasons.BINGO);
-        payable(msg.sender).transfer(gameList[_gameId].ethBalance * 1 ether);
+        if (msg.sender != gameList[_gameId].creator) {
+            uint gameWeiAmount = gameList[_gameId].ethBalance * 1 ether;
+            uint prize = gameWeiAmount - gameList[_gameId].weiUsed;
+
+            emit GameEnded(_gameId, msg.sender, prize, gameList[_gameId].weiUsed, false, WinningReasons.BINGO);
+            payable(msg.sender).transfer(prize);
+            payable(gameList[_gameId].creator).transfer(gameList[_gameId].weiUsed);
+        } else {
+            emit GameEnded(_gameId, msg.sender, gameList[_gameId].ethBalance * 1 ether, 0, true, WinningReasons.BINGO);
+            payable(msg.sender).transfer(gameList[_gameId].ethBalance * 1 ether);
+        }
 
     }
 }

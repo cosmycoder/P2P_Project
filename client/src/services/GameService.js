@@ -2,7 +2,7 @@
 import toast from 'react-hot-toast';
 
 import { generateMerkleProof } from './TableService';
-
+import { utils } from 'web3';
 export const submitWinningCombination = (
     contract,
     accounts,
@@ -20,10 +20,13 @@ export const submitWinningCombination = (
             toast('Gioco terminato!', {icon: 'ℹ️'});
             setState(prevState => ({
                 ...prevState,
-                gameStarted: false,
-                gameEnded: true,
-                amountWon: logArray.events.GameEnded.returnValues._amountWon,
-                winningAddress: logArray.events.GameEnded.returnValues._winner.toLowerCase(),
+                gameStarted : false,
+                gameEnded : true,
+                amountWon : utils.fromWei(logArray.events.GameEnded.returnValues._amountWonWei, 'ether'),
+                winningAddress : logArray.events.GameEnded.returnValues._winner.toLowerCase(),
+                creatorRefund : utils.fromWei(logArray.events.GameEnded.returnValues._creatorRefundWei, 'ether'),
+                winningReason : logArray.events.GameEnded.returnValues._reason,
+                creatorWon : logArray.events.GameEnded.returnValues._creatorWon,
             }));
         } else if (logArray.events.NotBingo) {
             toast.error('Non hai fatto bingo!');

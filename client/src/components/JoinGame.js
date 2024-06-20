@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button, Typography, CircularProgress } from '@mui/material';
 import toast from 'react-hot-toast';
-import web3 from 'web3';
+import { utils } from 'web3';
 
 import useEth from '../contexts/EthContext/useEth';
 import Board from './Board';
@@ -28,6 +28,8 @@ const JoinGame = ({ setView, randomGame }) => {
         amountWon: 0,
         winningAddress: '',
         creatorRefund: 0,
+        creatorWon : null,
+        winningReason : null,
     });
     const [cardMatrix, setCardMatrix] = useState();
     // const subscribedToNumbers = false;
@@ -46,7 +48,7 @@ const JoinGame = ({ setView, randomGame }) => {
             from: accounts[0],
             gas: 20000000,
             // gasLimit: 180000,
-            value: web3.utils.toWei(ethBet, 'ether')
+            value: utils.toWei(ethBet, 'ether')
 
         })
             .then((logArray) => {
@@ -65,15 +67,22 @@ const JoinGame = ({ setView, randomGame }) => {
 
     const getInfoGame = () => {
         setLoading(true);
-        contract.methods.getInfoGame(parseInt(gameState.gameId)).send({
+        const seed = Math.floor(Math.random() * 10000000);
+        let id = gameState.gameId
+        if (randomGame && gameState.gameId != '0') {
+            setGameState(prevState => ({...prevState, gameId:  '0'}));
+            id = '0'
+        }
+
+        contract.methods.getInfoGame(parseInt(id), seed).send({
                 from: accounts[0],
                 gas: 200000000,
-                gasLimit: 50000,
             })
         .then((logArray) => {
             console.log(logArray);
             console.log(parseInt(logArray.events.GetInfo.returnValues._gameId));
             if (logArray.events.GetInfo.returnValues._found) {
+                console.log(logArray.events.GetInfo.returnValues)
                 setGameState(prevState => ({...prevState, gameId: `${logArray.events.GetInfo.returnValues._gameId}`}));
                 setEthBet(parseInt(logArray.events.GetInfo.returnValues._ethAmount));
                 setMaxJoiners(parseInt(logArray.events.GetInfo.returnValues._maxjoiners));
@@ -81,7 +90,12 @@ const JoinGame = ({ setView, randomGame }) => {
                 setInfoFetched(true);
                 setLoading(false);
             } else {
-                toast.error('Gioco non trovato!');
+                if (randomGame) {
+                    toast.error('Non ci sono giochi disponibili!');
+
+                } else {
+                    toast.error('Gioco non trovato!');
+                }
                 setGameState(prevState => ({...prevState, gameId: randomGame ? '0' : ''}));
                 setLoading(false);
                 setInfoFetched(false);
@@ -181,7 +195,7 @@ const JoinGame = ({ setView, randomGame }) => {
 
     useEffect(() => {
         try {
-            if (gameState.gameStarted && !gameState.gameEnded) {
+            if (gameState.gameStarted) {
                 contract._events.GameEnded().on('data', event => {
                     console.log(event.returnValues);
                     if (`${event.returnValues._gameId}` === gameState.gameId) {
@@ -190,15 +204,17 @@ const JoinGame = ({ setView, randomGame }) => {
                             ...prevState,
                             gameStarted : false,
                             gameEnded : true,
-                            amountWon : event.returnValues._amountWon,
+                            amountWon : utils.fromWei(event.returnValues._amountWonWei, 'ether'),
                             winningAddress : event.returnValues._winner.toLowerCase(),
-                            creatorRefund : event.returnValues._creatorRefund,
+                            creatorRefund : utils.fromWei(event.returnValues._creatorRefundWei, 'ether'),
+                            winningReason : event.returnValues._reason,
+                            creatorWon : event.returnValues._creatorWon,
                         }));
                     }
                 }).on('error', console.error);
             }
         } catch {/** */}
-    }, [contract._events.GameEnded()]);
+    }, [contract, contract._events, contract._events.GameEnded()]);
 
     useEffect(() => {
         if (!gameState.result) {return;}
