@@ -299,7 +299,7 @@ export function generateMerkleTree(table) {
             if (tmp[j + 1]) {
                 nextLevel.push(utils.soliditySha3((tmp[j] + tmp[j + 1].slice(2))));
             } else {
-                nextLevel.push(utils.soliditySha3((tmp[j] + tmp[j].slice(2)))); // if the level has an odd number of elements, doubles the last element
+                nextLevel.push(utils.soliditySha3((tmp[j] + tmp[j].slice(2))));
             }
         }
         tmp = nextLevel;
@@ -353,12 +353,16 @@ export const generateMerkleProof = (card, result) => {
         }
         if (index > 15) {
             let last = proof.pop();
-            proof.push(`${merkleTree[merkleTree.length - 3][merkleTree[merkleTree.length - 3].length - 1]}`);
+            proof.push(`${merkleTree[merkleTree.length - 3]
+                [merkleTree[merkleTree.length - 3].length - 1]}`);
             proof.push(last);
         }
         proofs.push(proof);
     }
-    console.log(`MERKLE PROOF IS VALID: ${proofs.every(element => verifyMerkleProof(bytes32ToString(element[0]), bytes32ToString(element[1]),  merkleTree[merkleTree.length - 1][0], element.slice(2)))}`);
+    console.log(`MERKLE PROOF IS VALID: ${proofs.every
+        (element => verifyMerkleProof(bytes32ToString(element[0]),
+            bytes32ToString(element[1]),  merkleTree[merkleTree.length - 1][0],
+                element.slice(2)))}`);
     return proofs;
 };
 ```
@@ -525,13 +529,51 @@ Per calcolare quanto spende un joiner e quanto spende il creatore del gioco in b
 
 # Potenziali vulnerabilità
 
+La funzione utilizzata per generare numeri casuali in uno smart contract utilizza l'hashing di dati come il timestamp del blocco, la difficoltà del blocco, l'indirizzo del mittente e un seed fornito. Tuttavia, la sicurezza di questa implementazione merita attenzione. L'hashing di parametri come il timestamp e la difficoltà del blocco non è completamente imprevedibile e potrebbe essere influenzato da attacchi che manipolano questi valori, compromettendo la casualità dei numeri generati. Inoltre, la funzione itera per trovare un numero non ancora estratto, il che può aumentare il consumo di gas e causare ritardi se il numero di tentativi è elevato.
+
 ## Generazione di numeri casuali
 
+```java
+function extractNumber(int256 _gameId, bool accused) public {
+        uint startGas = gasleft();
+        require(gameList[_gameId].numbersExtracted.length <= 75,
+            "All numbers have been extracted!");
+        uint8 newNumber = getNewNumber(_gameId);
+        int8 i = 1;
+        while (isExtracted(gameList[_gameId].numbersExtracted, newNumber)) {
+            newNumber = getNewNumber(_gameId+i);
+            i++;
+        }
+        gameList[_gameId].numbersExtracted.push(newNumber);
+        if(accused){
+            gameList[_gameId].accusationTime = 0;
+            gameList[_gameId].accuser = address(0);
+            emit ConfirmRemovedAccuse(_gameId);
 
-## Limitazioni del gas
+        }
+        if(gameList[_gameId].numbersExtracted.length < 75){
+            emit NumberExtracted(_gameId, newNumber,false);
+        }else{
+            emit GameEnded(_gameId, msg.sender,
+                gameList[_gameId].ethBalance * 1 ether, 0, true, WinningReasons.BINGO);
+            payable(msg.sender).transfer(gameList[_gameId].ethBalance * 1 ether);
+        }
+        gameList[_gameId].weiUsed += (startGas - gasleft()) * tx.gasprice;
+    }
 
 
-# Conclusioni
+    function getNewNumber(int256 seed) internal view returns(uint8) {
+        uint256 randomHash = uint256(keccak256(abi.encodePacked
+            (block.timestamp, block.difficulty, msg.sender, seed)));
+        uint256 randomNumber = (randomHash % 75) + 1;
+        return uint8(randomNumber);
+    }
+
+```
+La funzione `extractNumber` gestisce l'estrazione di numeri casuali per un gioco all'interno di un contratto intelligente. Inizia registrando il gas disponibile all'inizio dell'esecuzione. Verifica se il numero di numeri estratti per il gioco specificato è inferiore o uguale a 75. Se tutti i numeri sono stati estratti, interrompe l'esecuzione con un errore. Genera un nuovo numero casuale utilizzando la funzione `getNewNumber`. Verifica l'unicità del numero attraverso un ciclo while, incrementando un contatore in caso di collisione e ottenendo un nuovo numero fino a trovare uno unico. Aggiunge il numero estratto all'array del gioco. Se l'argomento accused è vero, reimposta l'accusa nel gioco. Emette eventi per segnalare l'estrazione di un numero o la fine del gioco. Infine, calcola e aggiorna i costi di gas utilizzati durante l'esecuzione della funzione.
+
+
+
 
 
 
