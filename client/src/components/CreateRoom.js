@@ -1,5 +1,5 @@
 import { Button, CircularProgress } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { utils } from 'web3';
 
@@ -15,6 +15,7 @@ const CreateRoom = ({setView}) => {
     const [maxJoiners, setMaxJoiners] = useState(0);
 	const [ethBet, setEthBet] = useState('');
     const [waiting, setWaiting] = useState(false);
+    const accusedIntervalRef = useRef();
     const [gameState, setGameState] = useState({
         gameId: -1,
         gameStarted: false,
@@ -138,9 +139,10 @@ const CreateRoom = ({setView}) => {
         try {
             if (gameState.gameStarted) {
                 contract._events.ConfirmRemovedAccuse().on('data', event => {
-                    if (event.returnValues._gameId === gameState.gameId) {
+                    if (parseInt(event.returnValues._gameId) === gameState.gameId && !accused) {
                         setAccused(false);
                         toast.success('Accusa rimossa con successo');
+                        clearInterval(accusedIntervalRef.current);
                     }
                 }).on('error', console.error);
             }
@@ -172,53 +174,22 @@ const CreateRoom = ({setView}) => {
         } catch {/** */}
     }, [contract, contract._events, gameState, gameState.gameStarted, contract._events.GameEnded()]);
 
-
     useEffect(() => {
-        let interval;
-        if (gameState.gameStarted){
-            //console.log("dentro primo");
-            if (accused) {
-                //console.log("dentro secondo");
-                interval = setInterval(() => {
-                    contract.methods.checkAccuse(gameState.gameId).send({
-                        from: accounts[0],
-                        gas: 1000000,
-                        // gasPrice: 20000000000
-                    }).then((logArray) => {
-                        console.log('checking accuse...');
+        if (gameState.gameStarted && accused){
+            accusedIntervalRef.current = setInterval(() => {
+                contract.methods.checkAccuse(gameState.gameId).send({
+                    from: accounts[0],
+                    gas: 1000000,
+                }).then((logArray) => {
+                    console.log(logArray.events);
 
-                    }).catch((error) => {
-                        console.log(error);
-                        //toast.error(`Error checking accuse ${String(error)}`);
-                    });
-                }, 10000);
-            }
-            return () => clearInterval(interval);
-        }
-    }, [accused]);
-
-
-    useEffect(() => {
-        let interval;
-        if (gameState.gameStarted){
-            //console.log("dentro primo");
-            if (accused) {
-                //console.log("dentro secondo");
-                interval = setInterval(() => {
-                    contract.methods.checkAccuse(gameState.gameId).send({
-                        from: accounts[0],
-                        gas: 1000000,
-                    }).then((logArray) => {
-                        toast.success('checking...');
-                        console.log(logArray.events);
-
-                    }).catch((error) => {
-                        console.log(error);
-                        //toast.error(`Error checking accuse ${String(error)}`);
-                    });
-                }, 10000);
-            }
-            return () => clearInterval(interval);
+                }).catch((error) => {
+                    console.log(error);
+                    clearInterval(accusedIntervalRef.current);
+                    //toast.error(`Error checking accuse ${String(error)}`);
+                });
+            }, 10000);
+            return () => clearInterval(accusedIntervalRef.current);
         }
     }, [accused]);
 
