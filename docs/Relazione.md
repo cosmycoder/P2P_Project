@@ -309,6 +309,29 @@ export function generateMerkleTree(table) {
 }
 ```
 
+Una particolarità dell calcolo del merkle tree in questo contesto è che il numero di elementi nella cartella del bingo non è una potenza del 2:
+
+![MerkleTree](./immagini/MerkleTree.png)
+
+Come possiamo vedere dal diagramma al livello $3$, l'elemento con indice $2$ viene duplicato per permettere il calcolo dell'elemento $(4,1)$.
+Questa soluzione è di semplice implementazione, infatti, durante il calcolo del merkle tree, è sufficiente controllare all'interno del ciclo for se si ha un elemento successivo a quello corrente con cui eseguire l'hash, altrimenti si esegue l'hash *"raddoppiando"* il nodo corrente:
+
+```javascript
+for (let j = 0; j < tmp.length; j += 2) {
+    if (tmp[j + 1]) {
+        nextLevel.push(utils.soliditySha3((tmp[j] + tmp[j + 1].slice(2))));
+    } else {
+        nextLevel.push(utils.soliditySha3((tmp[j] + tmp[j].slice(2))));
+    }
+}
+```
+
+Questa soluzione non cambia il modo di verificare una merkle proof:
+
+- Se si deve verificare un elemento con indice minore di $15$, ad esempio $7$ la merkle proof conterrà
+
+![Merkle Proof dell'indice 7](./immagini/MerkleProof7.png)
+![Merkle Proof dell'indice 20](./immagini/MerkleProof20.png)
 
 ### Generazione  delle Merkle Proofs
 
