@@ -1,5 +1,6 @@
 import { Button, Typography } from '@mui/material';
-const Result = ({accounts, maxPlayers, state, setView}) => {
+import { notifyVictory } from '../services/GameService';
+const Result = ({accounts, maxPlayers, state, imCreator, setView}) => {
     console.log(state.amountWon, maxPlayers);
     const winningMessage = state.winningAddress === accounts[0].toLowerCase()
         ? `🏆 Congratulazioni! Hai vinto ${Number(state.amountWon)} ETH! 🏆`
@@ -9,6 +10,11 @@ const Result = ({accounts, maxPlayers, state, setView}) => {
     // if (state.winningAddress !== accounts[0].toLowerCase()) {
     //     transferEth(contract, accounts, state, ethBet);
     // }
+    if (state.winningAddress === accounts[0].toLowerCase() || (!imCreator && state.winningAddress === '0x0000000000000000000000000000000000000000'))
+        notifyVictory();
+
+
+
     return (
         <div className="flex flex-col items-center justify-center gap-4">
             <Typography className="text-black dark:text-white text-center" variant="h6">{winningMessage}</Typography>

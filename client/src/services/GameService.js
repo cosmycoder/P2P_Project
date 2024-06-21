@@ -40,4 +40,9 @@ export const submitWinningCombination = (
 export const notifyEvent = () => {
     const audio = new Audio('/number_extracted.mp3'); // Path to your sound file
     audio.play();
-  };
+};
+
+export const notifyVictory = () => {
+    const audio = new Audio('/victory.mp3'); // Path to your sound file
+    audio.play();
+};

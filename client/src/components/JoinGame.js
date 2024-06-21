@@ -216,7 +216,7 @@ const JoinGame = ({ setView, randomGame }) => {
                 }).on('error', console.error);
             }
         } catch {/** */}
-    }, [contract, contract._events, contract._events.GameEnded()]);
+    }, [contract, contract._events, gameState, gameState.gameStarted, contract._events.GameEnded()]);
 
     useEffect(() => {
         if (!gameState.result) {return;}
@@ -305,6 +305,7 @@ const JoinGame = ({ setView, randomGame }) => {
                 accounts={accounts}
                 maxPlayers={parseInt(maxJoiners)}
                 state={gameState}
+                imCreator={false}
                 setView={setView}
               />
             )}

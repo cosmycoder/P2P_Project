@@ -170,7 +170,7 @@ const CreateRoom = ({setView}) => {
                 }).on('error', console.error);
             }
         } catch {/** */}
-    }, [contract, contract._events, contract._events.GameEnded()]);
+    }, [contract, contract._events, gameState, gameState.gameStarted, contract._events.GameEnded()]);
 
 
     useEffect(() => {
@@ -306,6 +306,7 @@ const CreateRoom = ({setView}) => {
             accounts={accounts}
             maxPlayers={parseInt(maxJoiners)}
             state={gameState}
+            imCreator={true}
             setView={setView}
           />
         )}
