@@ -108,7 +108,7 @@ Una volta che tutti i giocatori sono entrati si avvia la partita e tutti i gioca
 #### Lato Creatore della stanza
 
 
-Come detto in precedenza solo il creatore delle stanze si prende carico della responsabilita di chiedere l'estrazione dei numeri al contratto. E come tale e' in una posizione di comando rispetto agli altri joiners. Vediamo la schermata di gioco (Figura 6):
+Come detto in precedenza solo il creatore delle stanze si prende carico della responsabilita di chiedere l'estrazione dei numeri al contratto. E come tale è in una posizione di comando rispetto agli altri joiners. Vediamo la schermata di gioco (Figura 6):
 
 ![Schermata di gioco del creatore](./immagini/TabellaCreator.png){ width=50% }
 
@@ -260,8 +260,8 @@ Le ultime variabili sono utilizzate rispettivamente per il controllo sui numeri 
 
 I seguenti vincoli sono stati implementati per garantire il corretto funzionamento del gioco:
 
-- **Numero delle caselle**: Il numero delle caselle e' stato settato seguendo le regole base del bingo americano e quindi a 25 caselle totali.
-- **La casella centrale**: La casella centrale e' una casella jolly e quindi valida di base.
+- **Numero delle caselle**: Il numero delle caselle è stato settato seguendo le regole base del bingo americano e quindi a 25 caselle totali.
+- **La casella centrale**: La casella centrale è una casella jolly e quindi valida di base.
 - **Il creatore**: Il creatore si assume il ruolo di chiedere al contratto di estrarre i numeri.
 - **Limite scommesse**:  I giocatori non possono scommettere piu di 1000 ETH.
 
@@ -276,7 +276,7 @@ Il codice per la generazione del Merkle Tree si trova nella funzione `generateMe
 
 **Funzionalità:**
 - La funzione prende in input una tabella (`table`), rappresentata come un array.
-- Ogni elemento della tabella viene convertito in un hash utilizzando `utils.soliditySha3`.
+- Ogni elemento della tabella viene convertito in un hash utilizzando `utils.soliditySha3` della liberia `web3`.
 - Gli hash risultanti costituiscono il livello delle foglie (`leaves`) del Merkle Tree.
 - Viene quindi calcolato il Merkle Tree iterativamente, concatenando e hashando le coppie di nodi fino a raggiungere la radice del Merkle Tree.
 
@@ -285,14 +285,12 @@ export function generateMerkleTree(table) {
     console.log(table);
     let merkleTree = [];
 
-    // Calc the leaves' hashes + salt
     let tmp = [];
     for (const element of table) {
         tmp.push(utils.soliditySha3(element.toString()));
     }
     merkleTree.push(tmp);
 
-    // Now lets calc the merkle tree
     while (tmp.length > 1) {
         const nextLevel = [];
         for (let j = 0; j < tmp.length; j += 2) {
@@ -309,7 +307,7 @@ export function generateMerkleTree(table) {
 }
 ```
 
-Una particolarità dell calcolo del merkle tree in questo contesto è che il numero di elementi nella cartella del bingo non è una potenza del 2:
+Una particolarità dell calcolo del merkle tree in questo contesto è che il numero di elementi nella cartella del bingo non è una potenza del 2, infatti viene considerato un array di 24 elementi (non includiamo la casella centrale essendo sempre valida) rappresentante la cartella del giocatore:
 
 ![MerkleTree](./immagini/MerkleTree.png)
 
@@ -326,14 +324,94 @@ for (let j = 0; j < tmp.length; j += 2) {
 }
 ```
 
-Questa soluzione non cambia il modo di verificare una merkle proof:
+Così come nella generazione dell'albero, si deve prestare attenzione anche alla generazione delle proof. In caso di bingo, a seconda se la combinazione contiene o no la casella centrale, la proof consiste in un array contenente tanti array quanti sono i numeri estratti da verificare:
 
-- Se si deve verificare un elemento con indice minore di $15$, ad esempio $7$ la merkle proof conterrà
+```javascript
+const exampleProof = [
+    [firstElement, elementIndex, H1, H2, H3, H4, H5],
+        ...,
+    [lastElement, elementIndex, H1, H2, H3, H4, H5]
+]
+```
+La funzione generateMerkleProof prende in input la cartella `card` di 24 elementi e l'array `result` sempre di 24 elementi booleani, dove l'elemento `i` è `true` se l'elemento `i` della cartella fa parte di una combinazione vincente.
 
-![Merkle Proof dell'indice 7](./immagini/MerkleProof7.png)
-![Merkle Proof dell'indice 20](./immagini/MerkleProof20.png)
+```javascript
+export const generateMerkleProof = (card, result) => {
+    const proofs = [];
+    const merkleTree = generateMerkleTree(card);
+    const leaves = merkleTree[0];
+    for (let i = 0; i < result.length; i++) {
+        if (!result[i]) {
+            continue;
+        }
+        const elementHash = utils.soliditySha3(card[i].toString());
+        const index = leaves.indexOf(elementHash);
 
-### Generazione  delle Merkle Proofs
+        let proof = [];
+        let currentIndex = index;
+
+        proof.push(stringToBytes32(card[i].toString()));
+        proof.push(stringToBytes32(i.toString()));
+
+        for (let level = 0; level < merkleTree.length - 1; level++) {
+            const currentLevel = merkleTree[level];
+            const isRightNode = currentIndex % 2 === 1;
+            const siblingIndex = isRightNode ? currentIndex - 1 : currentIndex + 1;
+
+            if (siblingIndex < currentLevel.length) {
+                proof.push(`${currentLevel[siblingIndex]}`);
+            }
+
+            currentIndex = Math.floor(currentIndex / 2);
+        }
+        if (index > 15) {
+            let last = proof.pop();
+            proof.push(
+                `${merkleTree[merkleTree.length - 3][merkleTree[merkleTree.length - 3].length - 1]}`
+            );
+            proof.push(last);
+        }
+        proofs.push(proof);
+    }
+    return proofs;
+};
+```
+
+Come possiamo vedere, dopo il ciclo for che va a calcolare gli hash da inserire nella proof, si va a controllare se l'indice dell'elemento di cui si sta calcolando la proof è maggiore di 15. Se è maggiore di 15, infatti si dovrà aggiungere l'hash $H_{3,2}$ in penultima posizione così che durante la verifica si tenga conto del *raddoppio* eseguito durante la generazione dell'albero.
+
+Questa soluzione permette di verificare in modo classico una proof, la cui implementazione si trova all'interno del contratto:
+
+```java
+function verifyMerkleProof(
+    bytes32 _root,
+    string memory _leaf,
+    bytes32[] memory _proof,
+    uint256 _index
+) internal pure returns (bool) {
+    bytes32 _hash = keccak256(abi.encodePacked(_leaf));
+    // Starting from 2 to avoid resizing the proof array
+    for (uint256 i = 2; i < _proof.length; i++) {
+        if (_index % 2 == 0) {
+            _hash = keccak256(abi.encodePacked(_hash, _proof[i]));
+        } else {
+            _hash = keccak256(abi.encodePacked(_proof[i], _hash));
+        }
+        _index /= 2;
+    }
+    return _hash == _root;
+}
+```
+
+#### Esempio 1
+Se si deve verificare un elemento con indice minore o uguale a $15$, ad esempio $7$ la sua merkle proof sarà: $$[element, 7, H_{0,6}, H_{1,2}, H_{2,0}, H_{3,1}, H_{4,1} ]$$
+
+![Merkle Proof dell'indice 7 - In verde gli hash forniti dalla proof, in viola quelli calcolati](./immagini/MerkleProof7.png)
+
+#### Esempio 2
+Se si deve verificare un elemento con indice maggiore di$15$, ad esempio $20$ la sua merkle proof sarà: $$[element, 20, H_{0,21}, H_{1,11}, H_{2,3}, H_{3,2}, H_{4,0} ]$$
+![Merkle Proof dell'indice 20 - In verde gli hash forniti dalla proof, in viola quelli calcolati](./immagini/MerkleProof20.png)
+
+<!-- ### Generazione  delle Merkle Proofs
 
 Il codice per la generazione delle Merkle Proofs si trova nella funzione `generateMerkleProof`.
 
@@ -382,13 +460,9 @@ export const generateMerkleProof = (card, result) => {
         }
         proofs.push(proof);
     }
-    console.log(`MERKLE PROOF IS VALID: ${proofs.every
-        (element => verifyMerkleProof(bytes32ToString(element[0]),
-            bytes32ToString(element[1]),  merkleTree[merkleTree.length - 1][0],
-                element.slice(2)))}`);
     return proofs;
 };
-```
+``` -->
 
 # Manuale utente
 
