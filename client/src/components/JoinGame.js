@@ -6,7 +6,7 @@ import { utils } from 'web3';
 import useEth from '../contexts/EthContext/useEth';
 import Board from './Board';
 import { generateMerkleTree, generateCard, getMatrix, isWinningCombination } from '../services/TableService';
-import { submitWinningCombination } from '../services/GameService';
+import { submitWinningCombination, notifyEvent } from '../services/GameService';
 import Result from './Result';
 
 const JoinGame = ({ setView, randomGame }) => {
@@ -144,8 +144,10 @@ const JoinGame = ({ setView, randomGame }) => {
     useEffect(() => {
         try {
             contract._events.NumberExtracted().on('data', event => {
-            if (`${event.returnValues._gameId}` === gameState.gameId)
-                {setExtractedNumbers([...extractedNumbers, event.returnValues.number]);}
+            if (`${event.returnValues._gameId}` === gameState.gameId) {
+                    setExtractedNumbers([...extractedNumbers, event.returnValues.number]);
+                    notifyEvent();
+                }
 
             }).on('error', console.error);
         } catch {/** */}
@@ -198,7 +200,7 @@ const JoinGame = ({ setView, randomGame }) => {
             if (gameState.gameStarted) {
                 contract._events.GameEnded().on('data', event => {
                     console.log(event.returnValues);
-                    if (`${event.returnValues._gameId}` === gameState.gameId) {
+                    if (`${event.returnValues._gameId}` === gameState.gameId && event.returnValues._winner.toLowerCase() !== accounts[0].toLowerCase()) {
                         toast('Gioco terminato!', {icon: 'ℹ️'});
                         setGameState(prevState => ({
                             ...prevState,

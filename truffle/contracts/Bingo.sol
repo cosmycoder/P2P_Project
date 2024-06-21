@@ -424,7 +424,7 @@ contract Bingo {
             // TODO: Pay all remaining players
             // Implement the logic to pay remaining players here
 
-            emit GameEnded(_gameId, address(0), gameList[_gameId].ethBalance, 0, false, WinningReasons.CREATOR_STALLED);
+            emit GameEnded(_gameId, address(0), gameList[_gameId].ethBalance * 1 ether, 0, false, WinningReasons.CREATOR_STALLED);
             uint prize = (gameList[_gameId].ethBalance * 1 ether) / gameList[_gameId].totalJoiners;
             for (uint i = 0;i < gameList[_gameId].totalJoiners; i++) {
                 payable(gameList[_gameId].joiners[i]).transfer(prize);
@@ -472,7 +472,7 @@ contract Bingo {
         uint[] memory indexList = new uint[](_merkleProofs.length);
         uint index;
         for (uint8 i = 0; i < _merkleProofs.length; i++) {
-            isNumberExtracted = true;
+            isNumberExtracted = false;
             for (uint8 j = 0; j < gameList[_gameId].numbersExtracted.length; j++) {
                 if (gameList[_gameId].numbersExtracted[j] == stringToUint(bytes32ToString(_merkleProofs[i][0]))){
                     isNumberExtracted = true;

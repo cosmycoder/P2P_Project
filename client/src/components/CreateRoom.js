@@ -6,7 +6,7 @@ import { utils } from 'web3';
 import useEth from '../contexts/EthContext/useEth';
 import Board from './Board';
 import { generateMerkleTree, generateCard, getMatrix , isWinningCombination } from '../services/TableService';
-import { submitWinningCombination } from '../services/GameService';
+import { notifyEvent, submitWinningCombination } from '../services/GameService';
 import Result from './Result';
 
 const CreateRoom = ({setView}) => {
@@ -123,17 +123,18 @@ const CreateRoom = ({setView}) => {
 
     useEffect(() => {
         try {
-            if (gameState.gameStarted) {
+            if (gameState.gameStarted && !accused) {
                 contract._events.ReceiveAccuse().on('data', event => {
                     console.log(event.returnValues);
                     if (parseInt(event.returnValues._gameId) === gameState.gameId) {
                         toast('Accusa ricevuta!', {icon: 'ℹ️'});
                         setAccused(true);
+                        notifyEvent();
                     }
                 }).on('error', console.error);
             }
         } catch {/** */}
-    }, [contract._events.ReceiveAccuse()]);
+    }, [accused, contract._events.ReceiveAccuse()]);
 
     useEffect(() => {
         try {
@@ -153,7 +154,7 @@ const CreateRoom = ({setView}) => {
             if (gameState.gameStarted) {
                 contract._events.GameEnded().on('data', event => {
                     console.log(event.returnValues);
-                    if (parseInt(event.returnValues._gameId) === gameState.gameId) {
+                    if (parseInt(event.returnValues._gameId) === gameState.gameId && event.returnValues._winner.toLowerCase() !== accounts[0].toLowerCase()) {
                         toast('Gioco terminato!', {icon: 'ℹ️'});
                         setGameState(prevState => ({
                             ...prevState,
@@ -184,10 +185,9 @@ const CreateRoom = ({setView}) => {
                     contract.methods.checkAccuse(gameState.gameId).send({
                         from: accounts[0],
                         gas: 1000000,
-                        gasPrice: 20000000000
+                        // gasPrice: 20000000000
                     }).then((logArray) => {
-                        toast.success('checking...');
-                        console.log(parseInt(logArray._events.Checked.returnValues._gameId));
+                        console.log('checking accuse...');
 
                     }).catch((error) => {
                         console.log(error);
