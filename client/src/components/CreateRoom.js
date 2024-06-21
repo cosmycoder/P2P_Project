@@ -71,6 +71,7 @@ const CreateRoom = ({setView}) => {
 
 
 
+
     const extractNumber = () => {
         contract.methods.extractNumber(gameState.gameId,accused).send({
             from: accounts[0],
@@ -91,9 +92,6 @@ const CreateRoom = ({setView}) => {
         setGameState(prevState => ({...prevState, result: result}));
     };
 
-    useEffect(()=>{
-        console.log(gameState);
-    }, [gameState]);
 
     useEffect(() => {
         try {
@@ -269,7 +267,7 @@ const CreateRoom = ({setView}) => {
         <div className="flex flex-col">
         {!gameState.gameEnded && gameState.gameStarted && (
           <h1 className="flex text-black dark:text-white justify-center text-2xl">
-            {`Numeri estratti: ${extractedNumbers}`}
+            {`Numeri estratti: ${extractedNumbers.length > 5 ? extractedNumbers.slice(-5) : extractedNumbers}`}
           </h1>
         )}
         {!gameState.gameEnded && (

@@ -144,7 +144,7 @@ const JoinGame = ({ setView, randomGame }) => {
     useEffect(() => {
         try {
             contract._events.NumberExtracted().on('data', event => {
-            if (`${event.returnValues._gameId}` === gameState.gameId) {
+                if (`${event.returnValues._gameId}` === gameState.gameId && !extractedNumbers.includes(event.returnValues.number)) {
                     setExtractedNumbers([...extractedNumbers, event.returnValues.number]);
                     notifyEvent();
                 }
@@ -249,7 +249,7 @@ const JoinGame = ({ setView, randomGame }) => {
         <div className="flex flex-col justify-center items-center">
           {gameState.gameStarted && (
             <h1 className="flex text-black dark:text-white text-center text-2xl">
-              {`Numeri estratti: ${extractedNumbers}`}
+              {`Numeri estratti: ${extractedNumbers.length > 5 ? extractedNumbers.slice(-5) : extractedNumbers}`}
             </h1>
           )}
           {!gameState.gameEnded && (
