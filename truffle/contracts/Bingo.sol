@@ -31,7 +31,7 @@ contract Bingo {
     int256 public lastGameId = 0; // Game ID counter
     mapping(int256 => Info) public gameList; // Mapping of game ID to game info
     int256[] public elencoGiochiDisponibili;    // List of available game IDs
-
+    uint8[][] winningCombinations;
 
 
 /***************************************** */
@@ -93,7 +93,20 @@ contract Bingo {
         uint256 _response
     );
 
-    constructor() { }
+    constructor() {
+        winningCombinations.push([0, 1, 2, 3, 4]);    // ROW1
+        winningCombinations.push([5, 6, 7, 8, 9]);    // ROW2
+        winningCombinations.push([10, 11, 12, 13]);   // ROW3
+        winningCombinations.push([14, 15, 16, 17, 18]); // ROW4
+        winningCombinations.push([19, 20, 21, 22, 23]); // ROW5
+        winningCombinations.push([0, 5, 10, 14, 19]); // COL1
+        winningCombinations.push([1, 6, 11, 15, 20]); // COL2
+        winningCombinations.push([2, 7, 16, 21]);     // COL3
+        winningCombinations.push([3, 8, 12, 17, 22]); // COL4
+        winningCombinations.push([4, 9, 13, 18, 23]); // COL5
+        winningCombinations.push([0, 6, 17, 23]);     // DIAG1
+        winningCombinations.push([4, 8, 15, 19]);     // DIAG2
+     }
 
     /*********************************************** */
     /**               GETTERS                       **/
@@ -255,6 +268,29 @@ contract Bingo {
         return false;
     }
 
+    function containsSubarray(uint8[] memory subArray, uint[] memory array) public pure returns (bool) {
+        for (uint8 i = 0; i < subArray.length; i++) {
+            bool found = false;
+            for (uint8 j = 0; j < array.length; j++) {
+                if (subArray[i] == array[j]) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    function isWinningCombination(uint[] memory combination) public view returns (bool) {
+        for (uint8 i = 0; i < winningCombinations.length; i++) {
+            if (containsSubarray(winningCombinations[i], combination))
+                return true;
+        }
+        return false;
+    }
 
     /**************************************************************** */
     /**       Functions to handle main logic of game                 **/
@@ -433,19 +469,29 @@ contract Bingo {
                        ? gameList[_gameId].creatorMerkleRoot
                        : gameList[_gameId].joinerMerkleRoots[msg.sender];
         bool isNumberExtracted = false;
+        uint[] memory indexList = new uint[](_merkleProofs.length);
+        uint index;
         for (uint8 i = 0; i < _merkleProofs.length; i++) {
-            isNumberExtracted = false;
+            isNumberExtracted = true;
             for (uint8 j = 0; j < gameList[_gameId].numbersExtracted.length; j++) {
                 if (gameList[_gameId].numbersExtracted[j] == stringToUint(bytes32ToString(_merkleProofs[i][0]))){
                     isNumberExtracted = true;
                     break;
                 }
             }
-            if (!isNumberExtracted || !verifyMerkleProof(root, bytes32ToString(_merkleProofs[i][0]), _merkleProofs[i], stringToUint(bytes32ToString(_merkleProofs[i][1])))){
+            index = stringToUint(bytes32ToString(_merkleProofs[i][1]));
+            indexList[i] = index;
+            if (!isNumberExtracted || !verifyMerkleProof(root, bytes32ToString(_merkleProofs[i][0]), _merkleProofs[i], index)){
                 emit NotBingo(_gameId, msg.sender);
                 return;
             }
         }
+
+        if (!isWinningCombination(indexList)) {
+            emit NotBingo(_gameId, msg.sender);
+            return;
+        }
+
         if (msg.sender != gameList[_gameId].creator) {
             uint gameWeiAmount = gameList[_gameId].ethBalance * 1 ether;
             uint prize = gameWeiAmount - gameList[_gameId].weiUsed;

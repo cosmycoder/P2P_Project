@@ -142,17 +142,11 @@ export function generateMerkleTree(table) {
     console.log(table);
     let merkleTree = [];
 
-    // Calc the leaves' hashes + salt
     let tmp = [];
     for (const element of table) {
-        // tmp.push(web3.utils.soliditySha3((element.toString() + Math.floor(Math.random() * 10)).toString()));
         tmp.push(utils.soliditySha3(element.toString()));
     }
     merkleTree.push(tmp);
-//     if (tmp[j + 1])
-//     nextLevel.push(web3.utils.soliditySha3(Buffer.concat([Buffer.from(tmp[j], 'utf-8'), Buffer.from(tmp[j] + 1,  'utf-8')])));
-// else
-//     nextLevel.push(web3.utils.soliditySha3(Buffer.concat([Buffer.from(tmp[j], 'utf-8'), Buffer.from(tmp[j], 'utf-8')]))); // if the level has an odd number of elements, doubles the last element
 
     // Now lets calc the merkle tree
     while (tmp.length > 1) {
@@ -183,10 +177,6 @@ export const generateMerkleProof = (card, result) => {
         const elementHash = utils.soliditySha3(card[i].toString());
         const index = leaves.indexOf(elementHash);
 
-        // if (index === -1) {
-        //     throw new Error('Element not found in the table');
-        // }
-
         let proof = [];
         let currentIndex = index;
 
@@ -211,31 +201,8 @@ export const generateMerkleProof = (card, result) => {
         }
         proofs.push(proof);
     }
-    console.log(`MERKLE PROOF IS VALID: ${proofs.every(element => verifyMerkleProof(bytes32ToString(element[0]), bytes32ToString(element[1]),  merkleTree[merkleTree.length - 1][0], element.slice(2)))}`);
     return proofs;
-    // console.log(proofs)
-    // for (let p of proofs) {
-    //     console.log(`Verify ${p[0]} - ${p.slice(2)} - ${merkleTree[merkleTree.length - 1][0]} ` + verifyMerkleProof(p[0], p[1],  merkleTree[merkleTree.length - 1][0], p.slice(2)));
-    // }
 };
-
-function verifyMerkleProof(element, index, root, proof) {
-    let hash = utils.soliditySha3(element.toString());
-    console.log(hash);
-    for (const element of proof) {
-        if (index % 2 === 0) {
-            hash = utils.soliditySha3(hash + element.slice(2));
-        } else {
-            hash = utils.soliditySha3(element + hash.slice(2));
-        }
-
-        // Move to the parent node
-        index = Math.floor(index / 2);
-    }
-    return hash === root;
-}
-
-
 
 export function isWinningCombination(card) {
     for (const combination in winningCombinations) {
