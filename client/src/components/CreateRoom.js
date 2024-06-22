@@ -33,7 +33,6 @@ const CreateRoom = ({setView}) => {
     const [canExtract, setCanExtract] = useState(true);
     const [extractedNumbers, setExtractedNumbers] = useState([]);
     const [isBingo, setIsBingo] = useState(false);
-    // const [winningCombination, setWinningCombination] = useState([]);
     const [accused, setAccused] = useState(false);
     const stateRef = useRef(gameState);
     const exNumRef = useRef(extractedNumbers);
@@ -43,19 +42,11 @@ const CreateRoom = ({setView}) => {
 	const createGame = () => {
 		const _maxPlayers = parseInt(maxPlayers);
 		const _ethBet = parseInt(ethBet);
-		// window.ethereum.on("GameCreated", () => {
-		// 	console.log("Game started")
-		// 	toast('Game started', {
-		// 		icon: 'ℹ️'
-		// 	});
-		// });
         let _card = generateCard();
-        // let _card = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23];
         setGameState(prevState => ({...prevState, card: _card}));
         setCardMatrix(getMatrix(_card));
         let merkleTree = generateMerkleTree(_card);
 
-        console.log(_maxPlayers, _ethBet, `${merkleTree[merkleTree.length - 1][0]}`);
 		contract.methods.createGame(_maxPlayers, _ethBet, `${merkleTree[merkleTree.length - 1][0]}`)
             .send({
                     from: accounts[0],
@@ -63,12 +54,10 @@ const CreateRoom = ({setView}) => {
                     value: utils.toWei(_ethBet, 'ether')
                 })
             .then((logArray) => {
-                console.log(logArray);
                 setGameState(prevState => ({...prevState, gameId: parseInt(logArray.events.GameCreated.returnValues._gameId)}));
                 setWaiting(true);
                 toast.success('Gioco creato con successo!');
 		}).catch((error) => {
-			console.log(error);
 			toast.error(`Error creating a game ${String(error)}`);
 		});
 	};
@@ -97,9 +86,7 @@ const CreateRoom = ({setView}) => {
     };
 
     const handleEvents = (data) => {
-        console.log(data)
         if (data.event === 'GameStarted') {
-            console.log('Game Started:', data);
             if (parseInt(data.returnValues._gameId) === stateRef.current.gameId) {
                 setGameState(prevState => ({...prevState, gameStarted: true}));
                 setWaiting(false);
@@ -125,11 +112,9 @@ const CreateRoom = ({setView}) => {
                 parseInt(data.returnValues._gameId) === parseInt(stateRef.current.gameId)
                 && accounts[0].toLowerCase() !== data.returnValues.player.toLowerCase()
             ) {
-                console.log('Not bingo!');
                 toast.error('Qualcuno ha chiamato bingo ma non lo era!');
             }
         } else if (data.event === 'GameEnded') {
-            console.log(data.returnValues);
             if (parseInt(data.returnValues._gameId) ===  stateRef.current.gameId && data.returnValues._winner.toLowerCase() !== accounts[0].toLowerCase()) {
                 toast('Gioco terminato!', {icon: 'ℹ️'});
                 setGameState(prevState => ({
@@ -150,11 +135,9 @@ const CreateRoom = ({setView}) => {
     }
 
     useEffect(() => {
-        console.log("EVENTS BINDED")
 
         contract._events.allEvents().on('data', handleEvents)
         return () => {
-            console.log("UNBINDEVENTS")
             contract._events.allEvents().off('data', handleEvents);
         }
     }, []);
@@ -192,7 +175,6 @@ const CreateRoom = ({setView}) => {
 
     useEffect(() => {
         if (!gameState.result) {return;}
-        console.log(gameState.result);
         const [bingo, combination] = isWinningCombination(gameState.result);
         if (gameState.result && bingo) {
             console.log('Bingo!');
