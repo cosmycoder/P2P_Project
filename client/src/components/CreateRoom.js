@@ -1,12 +1,12 @@
 import { Button, CircularProgress } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { utils } from 'web3';
 
 import useEth from '../contexts/EthContext/useEth';
 import Board from './Board';
 import { generateMerkleTree, generateCard, getMatrix , isWinningCombination } from '../services/TableService';
-import { submitWinningCombination } from '../services/GameService';
+import { notifyEvent, submitWinningCombination } from '../services/GameService';
 import Result from './Result';
 
 const CreateRoom = ({setView}) => {
@@ -15,6 +15,7 @@ const CreateRoom = ({setView}) => {
     const [maxJoiners, setMaxJoiners] = useState(0);
 	const [ethBet, setEthBet] = useState('');
     const [waiting, setWaiting] = useState(false);
+    const accusedIntervalRef = useRef();
     const [gameState, setGameState] = useState({
         gameId: -1,
         gameStarted: false,
@@ -71,6 +72,7 @@ const CreateRoom = ({setView}) => {
 
 
 
+
     const extractNumber = () => {
         contract.methods.extractNumber(gameState.gameId,accused).send({
             from: accounts[0],
@@ -91,9 +93,6 @@ const CreateRoom = ({setView}) => {
         setGameState(prevState => ({...prevState, result: result}));
     };
 
-    useEffect(()=>{
-        console.log(gameState);
-    }, [gameState]);
 
     useEffect(() => {
         try {
@@ -123,25 +122,27 @@ const CreateRoom = ({setView}) => {
 
     useEffect(() => {
         try {
-            if (gameState.gameStarted) {
+            if (gameState.gameStarted && !accused) {
                 contract._events.ReceiveAccuse().on('data', event => {
                     console.log(event.returnValues);
                     if (parseInt(event.returnValues._gameId) === gameState.gameId) {
                         toast('Accusa ricevuta!', {icon: 'ℹ️'});
                         setAccused(true);
+                        notifyEvent();
                     }
                 }).on('error', console.error);
             }
         } catch {/** */}
-    }, [contract._events.ReceiveAccuse()]);
+    }, [accused, contract._events.ReceiveAccuse()]);
 
     useEffect(() => {
         try {
             if (gameState.gameStarted) {
                 contract._events.ConfirmRemovedAccuse().on('data', event => {
-                    if (event.returnValues._gameId === gameState.gameId) {
+                    if (parseInt(event.returnValues._gameId) === gameState.gameId && !accused) {
                         setAccused(false);
                         toast.success('Accusa rimossa con successo');
+                        clearInterval(accusedIntervalRef.current);
                     }
                 }).on('error', console.error);
             }
@@ -153,7 +154,7 @@ const CreateRoom = ({setView}) => {
             if (gameState.gameStarted) {
                 contract._events.GameEnded().on('data', event => {
                     console.log(event.returnValues);
-                    if (parseInt(event.returnValues._gameId) === gameState.gameId) {
+                    if (parseInt(event.returnValues._gameId) === gameState.gameId && event.returnValues._winner.toLowerCase() !== accounts[0].toLowerCase()) {
                         toast('Gioco terminato!', {icon: 'ℹ️'});
                         setGameState(prevState => ({
                             ...prevState,
@@ -171,56 +172,24 @@ const CreateRoom = ({setView}) => {
                 }).on('error', console.error);
             }
         } catch {/** */}
-    }, [contract, contract._events, contract._events.GameEnded()]);
-
-
-    useEffect(() => {
-        let interval;
-        if (gameState.gameStarted){
-            //console.log("dentro primo");
-            if (accused) {
-                //console.log("dentro secondo");
-                interval = setInterval(() => {
-                    contract.methods.checkAccuse(gameState.gameId).send({
-                        from: accounts[0],
-                        gas: 1000000,
-                        gasPrice: 20000000000
-                    }).then((logArray) => {
-                        toast.success('checking...');
-                        console.log(parseInt(logArray._events.Checked.returnValues._gameId));
-
-                    }).catch((error) => {
-                        console.log(error);
-                        //toast.error(`Error checking accuse ${String(error)}`);
-                    });
-                }, 10000);
-            }
-            return () => clearInterval(interval);
-        }
-    }, [accused]);
-
+    }, [contract, contract._events, gameState, gameState.gameStarted, contract._events.GameEnded()]);
 
     useEffect(() => {
-        let interval;
-        if (gameState.gameStarted){
-            //console.log("dentro primo");
-            if (accused) {
-                //console.log("dentro secondo");
-                interval = setInterval(() => {
-                    contract.methods.checkAccuse(gameState.gameId).send({
-                        from: accounts[0],
-                        gas: 1000000,
-                    }).then((logArray) => {
-                        toast.success('checking...');
-                        console.log(logArray.events);
+        if (gameState.gameStarted && accused){
+            accusedIntervalRef.current = setInterval(() => {
+                contract.methods.checkAccuse(gameState.gameId).send({
+                    from: accounts[0],
+                    gas: 1000000,
+                }).then((logArray) => {
+                    console.log(logArray.events);
 
-                    }).catch((error) => {
-                        console.log(error);
-                        //toast.error(`Error checking accuse ${String(error)}`);
-                    });
-                }, 10000);
-            }
-            return () => clearInterval(interval);
+                }).catch((error) => {
+                    console.log(error);
+                    clearInterval(accusedIntervalRef.current);
+                    //toast.error(`Error checking accuse ${String(error)}`);
+                });
+            }, 10000);
+            return () => clearInterval(accusedIntervalRef.current);
         }
     }, [accused]);
 
@@ -269,7 +238,7 @@ const CreateRoom = ({setView}) => {
         <div className="flex flex-col">
         {!gameState.gameEnded && gameState.gameStarted && (
           <h1 className="flex text-black dark:text-white justify-center text-2xl">
-            {`Numeri estratti: ${extractedNumbers}`}
+            {`Numeri estratti: ${extractedNumbers.length > 5 ? extractedNumbers.slice(-5) : extractedNumbers}`}
           </h1>
         )}
         {!gameState.gameEnded && (
@@ -308,6 +277,7 @@ const CreateRoom = ({setView}) => {
             accounts={accounts}
             maxPlayers={parseInt(maxJoiners)}
             state={gameState}
+            imCreator={true}
             setView={setView}
           />
         )}
