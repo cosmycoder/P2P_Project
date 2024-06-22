@@ -1,4 +1,4 @@
-import { Button, CircularProgress } from '@mui/material';
+import { Button, CircularProgress, useForkRef } from '@mui/material';
 import { useEffect, useState, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { utils } from 'web3';
@@ -33,26 +33,20 @@ const CreateRoom = ({setView}) => {
     const [canExtract, setCanExtract] = useState(true);
     const [extractedNumbers, setExtractedNumbers] = useState([]);
     const [isBingo, setIsBingo] = useState(false);
-    // const [winningCombination, setWinningCombination] = useState([]);
     const [accused, setAccused] = useState(false);
+    const stateRef = useRef(gameState);
+    const exNumRef = useRef(extractedNumbers);
+    const accusedRef = useRef(accused);
     const re = /^[0-9\b]+$/;
 
 	const createGame = () => {
 		const _maxPlayers = parseInt(maxPlayers);
 		const _ethBet = parseInt(ethBet);
-		// window.ethereum.on("GameCreated", () => {
-		// 	console.log("Game started")
-		// 	toast('Game started', {
-		// 		icon: 'ℹ️'
-		// 	});
-		// });
         let _card = generateCard();
-        // let _card = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23];
         setGameState(prevState => ({...prevState, card: _card}));
         setCardMatrix(getMatrix(_card));
         let merkleTree = generateMerkleTree(_card);
 
-        console.log(_maxPlayers, _ethBet, `${merkleTree[merkleTree.length - 1][0]}`);
 		contract.methods.createGame(_maxPlayers, _ethBet, `${merkleTree[merkleTree.length - 1][0]}`)
             .send({
                     from: accounts[0],
@@ -60,12 +54,10 @@ const CreateRoom = ({setView}) => {
                     value: utils.toWei(_ethBet, 'ether')
                 })
             .then((logArray) => {
-                console.log(logArray);
                 setGameState(prevState => ({...prevState, gameId: parseInt(logArray.events.GameCreated.returnValues._gameId)}));
                 setWaiting(true);
                 toast.success('Gioco creato con successo!');
 		}).catch((error) => {
-			console.log(error);
 			toast.error(`Error creating a game ${String(error)}`);
 		});
 	};
@@ -93,86 +85,74 @@ const CreateRoom = ({setView}) => {
         setGameState(prevState => ({...prevState, result: result}));
     };
 
-
-    useEffect(() => {
-        try {
-            contract._events.GameStarted().on('data', event => {
-                console.log('Game Started:', event);
+    const handleEvents = (data) => {
+        if (data.event === 'GameStarted') {
+            if (parseInt(data.returnValues._gameId) === stateRef.current.gameId) {
                 setGameState(prevState => ({...prevState, gameStarted: true}));
                 setWaiting(false);
-            }).on('error', console.error);
-        } catch {/** */}
-    }, [contract]);
+            }
+        } else if (data.event === 'ReceiveAccuse') {
+            if (stateRef.current.gameStarted) {
+                if (parseInt(data.returnValues._gameId) === stateRef.current.gameId && !accusedRef.current) {
+                    toast('Accusa ricevuta!', {icon: 'ℹ️'});
+                    setAccused(true);
+                    notifyEvent();
+                }
+            }
+        } else if (data.event === 'ConfirmRemovedAccuse') {
+            if (stateRef.current.gameStarted) {
+                if (parseInt(data.returnValues._gameId) === stateRef.current.gameId && accusedRef.current) {
+                    setAccused(false);
+                    toast.success('Accusa rimossa con successo');
+                    clearInterval(accusedIntervalRef.current);
+                }
+            }
+        } else if (data.event === 'NotBingo') {
+            if (
+                parseInt(data.returnValues._gameId) === parseInt(stateRef.current.gameId)
+                && accounts[0].toLowerCase() !== data.returnValues.player.toLowerCase()
+            ) {
+                toast.error('Qualcuno ha chiamato bingo ma non lo era!');
+            }
+        } else if (data.event === 'GameEnded') {
+            if (parseInt(data.returnValues._gameId) ===  stateRef.current.gameId && data.returnValues._winner.toLowerCase() !== accounts[0].toLowerCase()) {
+                toast('Gioco terminato!', {icon: 'ℹ️'});
+                setGameState(prevState => ({
+                    ...prevState,
+                    gameStarted : false,
+                    gameEnded : true,
+                    amountWon : utils.fromWei(data.returnValues._amountWonWei, 'ether'),
+                    winningAddress : data.returnValues._winner.toLowerCase(),
+                    creatorRefund : utils.fromWei(data.returnValues._creatorRefundWei, 'ether'),
+                    winningReason : data.returnValues._reason,
+                    creatorWon : data.returnValues._creatorWon,
+                }));
+                setAccused(false);
+            }
+        } else {
+            console.log(data);
+        }
+    }
 
     useEffect(() => {
-        try {
-            if (gameState.gameStarted) {
-                contract._events.NotBingo().on('data', event => {
-                    if (
-                        parseInt(event.returnValues._gameId) === parseInt(gameState.gameId)
-                        && accounts[0].toLowerCase() !== event.returnValues.player.toLowerCase()
-                    ) {
-                        console.log('Not bingo!');
-                        toast.error('Qualcuno ha chiamato bingo ma non lo era!');
-                    }
-                }).on('error', console.error);
-            }
-        } catch {/** */}
-    }, [contract._events.NotBingo()]);
+
+        contract._events.allEvents().on('data', handleEvents)
+        return () => {
+            contract._events.allEvents().off('data', handleEvents);
+        }
+    }, []);
 
     useEffect(() => {
-        try {
-            if (gameState.gameStarted && !accused) {
-                contract._events.ReceiveAccuse().on('data', event => {
-                    console.log(event.returnValues);
-                    if (parseInt(event.returnValues._gameId) === gameState.gameId) {
-                        toast('Accusa ricevuta!', {icon: 'ℹ️'});
-                        setAccused(true);
-                        notifyEvent();
-                    }
-                }).on('error', console.error);
-            }
-        } catch {/** */}
-    }, [accused, contract._events.ReceiveAccuse()]);
+        stateRef.current = gameState;
+    }, [gameState]);
 
     useEffect(() => {
-        try {
-            if (gameState.gameStarted) {
-                contract._events.ConfirmRemovedAccuse().on('data', event => {
-                    if (parseInt(event.returnValues._gameId) === gameState.gameId && !accused) {
-                        setAccused(false);
-                        toast.success('Accusa rimossa con successo');
-                        clearInterval(accusedIntervalRef.current);
-                    }
-                }).on('error', console.error);
-            }
-        } catch {/** */}
-    }, [contract._events.ConfirmRemovedAccuse()]);
+        exNumRef.current = extractedNumbers;
+    }, [extractedNumbers]);
 
     useEffect(() => {
-        try {
-            if (gameState.gameStarted) {
-                contract._events.GameEnded().on('data', event => {
-                    console.log(event.returnValues);
-                    if (parseInt(event.returnValues._gameId) === gameState.gameId && event.returnValues._winner.toLowerCase() !== accounts[0].toLowerCase()) {
-                        toast('Gioco terminato!', {icon: 'ℹ️'});
-                        setGameState(prevState => ({
-                            ...prevState,
-                            gameStarted : false,
-                            gameEnded : true,
-                            amountWon : utils.fromWei(event.returnValues._amountWonWei, 'ether'),
-                            winningAddress : event.returnValues._winner.toLowerCase(),
-                            creatorRefund : utils.fromWei(event.returnValues._creatorRefundWei, 'ether'),
-                            winningReason : event.returnValues._reason,
-                            creatorWon : event.returnValues._creatorWon,
-                        }));
-                        setWaiting(false);
-                        setAccused(false);
-                    }
-                }).on('error', console.error);
-            }
-        } catch {/** */}
-    }, [contract, contract._events, gameState, gameState.gameStarted, contract._events.GameEnded()]);
+        accusedRef.current = accused;
+    }, [accused]);
 
     useEffect(() => {
         if (gameState.gameStarted && accused){
@@ -195,7 +175,6 @@ const CreateRoom = ({setView}) => {
 
     useEffect(() => {
         if (!gameState.result) {return;}
-        console.log(gameState.result);
         const [bingo, combination] = isWinningCombination(gameState.result);
         if (gameState.result && bingo) {
             console.log('Bingo!');

@@ -380,6 +380,7 @@ contract Bingo {
 
     function extractNumber(int256 _gameId, bool accused) public {
         uint startGas = gasleft();
+        require(msg.sender == gameList[_gameId].creator, "Only the creator can extract a number!");
         require(gameList[_gameId].numbersExtracted.length <= 75, "All numbers have been extracted!");
         uint8 newNumber = getNewNumber(_gameId);
         int8 i = 1;
@@ -412,6 +413,7 @@ contract Bingo {
         gameList[_gameId].accuser = msg.sender;
         emit ReceiveAccuse(_gameId, msg.sender);
     }
+
     function checkAccuse(int256 _gameId) public {
         require(_gameId > 0, "Game id is negative!");
         require(gameList[_gameId].creator == msg.sender, "Only the Creator may accuse!");
