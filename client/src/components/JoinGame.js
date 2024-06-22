@@ -41,16 +41,12 @@ const JoinGame = ({ setView, randomGame }) => {
 
 
     const handleEvents = (data) => {
-        console.log(data)
         if (data.event === 'GameStarted') {
             if (`${data.returnValues._gameId}` === stateRef.current.gameId) {
                 setGameState(prevState => ({...prevState, gameStarted: true}));
                 setWaitingForPlayers(false);
             }
         } else if (data.event === 'NumberExtracted') {
-            console.log("NumberExtracted")
-            console.log(`${data.returnValues._gameId}` === stateRef.current.gameId )
-            console.log(!extractedNumbers.includes(data.returnValues.number))
             if (`${data.returnValues._gameId}` === stateRef.current.gameId && !exNumRef.current.includes(data.returnValues.number)) {
                 setExtractedNumbers([...exNumRef.current, data.returnValues.number]);
                 notifyEvent();
@@ -58,7 +54,6 @@ const JoinGame = ({ setView, randomGame }) => {
             }
         } else if (data.event === 'ReceiveAccuse') {
             if (stateRef.current.gameStarted) {
-                console.log(data.returnValues);
                 if (`${data.returnValues._gameId}` === stateRef.current.gameId)
                     setAccusePending(true);
 
@@ -74,11 +69,9 @@ const JoinGame = ({ setView, randomGame }) => {
                 parseInt(data.returnValues._gameId) === parseInt(stateRef.current.gameId)
                 && accounts[0].toLowerCase() !== data.returnValues.player.toLowerCase()
             ) {
-                console.log('Not bingo!');
                 toast.error('Qualcuno ha chiamato bingo ma non lo era!');
             }
         } else if (data.event === 'GameEnded') {
-            console.log(data.returnValues);
             if (`${data.returnValues._gameId}` === stateRef.current.gameId && data.returnValues._winner.toLowerCase() !== accounts[0].toLowerCase()) {
                 toast('Gioco terminato!', {icon: 'ℹ️'});
                 setGameState(prevState => ({
@@ -99,11 +92,8 @@ const JoinGame = ({ setView, randomGame }) => {
 
 
     useEffect(() => {
-        console.log("EVENTS BINDED")
-
         contract._events.allEvents().on('data', handleEvents)
         return () => {
-            console.log("UNBINDEVENTS")
             contract._events.allEvents().off('data', handleEvents);
         }
     }, []);
@@ -130,7 +120,6 @@ const JoinGame = ({ setView, randomGame }) => {
 
         })
         .then((logArray) => {
-            console.log(parseInt(logArray.events.GameJoined.returnValues._gameId));
             setLoading(false);
             setWaitingForPlayers(true);
         })
@@ -157,10 +146,7 @@ const JoinGame = ({ setView, randomGame }) => {
                 gas: 200000000,
             })
         .then((logArray) => {
-            console.log(logArray);
-            console.log(parseInt(logArray.events.GetInfo.returnValues._gameId));
             if (logArray.events.GetInfo.returnValues._found) {
-                console.log(logArray.events.GetInfo.returnValues)
                 setGameState(prevState => ({...prevState, gameId: `${logArray.events.GetInfo.returnValues._gameId}`}));
                 setEthBet(parseInt(logArray.events.GetInfo.returnValues._ethAmount));
                 setMaxJoiners(parseInt(logArray.events.GetInfo.returnValues._maxjoiners));
@@ -197,8 +183,6 @@ const JoinGame = ({ setView, randomGame }) => {
             gas: 2000000,
         })
         .then((logArray) => {
-            console.log(`Accusation made in game with ID: ${gameState.gameId}`);
-            console.log(logArray);
             setLoading(false);
             toast.success('Creatore accusato con successo!');
         })
@@ -217,13 +201,11 @@ const JoinGame = ({ setView, randomGame }) => {
 
     useEffect(() => {
         if (!gameState.result) {return;}
-        console.log(gameState.result);
         const [bingo, combination] = isWinningCombination(gameState.result);
         if (gameState.result && bingo) {
             console.log('Bingo!');
             toast('Bingo!', {icon: '🥳'});
             setIsBingo(true);
-            console.log('Winning combination ->' + combination);
         } else {
             setIsBingo(false);
         }
