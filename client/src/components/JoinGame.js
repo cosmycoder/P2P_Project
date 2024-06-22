@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button, Typography, CircularProgress } from '@mui/material';
 import toast from 'react-hot-toast';
 import { utils } from 'web3';
@@ -31,12 +31,89 @@ const JoinGame = ({ setView, randomGame }) => {
         creatorWon : null,
         winningReason : null,
     });
+    const [extractedNumbers, setExtractedNumbers] = useState([]);
+    const stateRef = useRef(gameState);
+    const exNumRef = useRef(extractedNumbers);
+
     const [cardMatrix, setCardMatrix] = useState();
     // const subscribedToNumbers = false;
-    const [extractedNumbers, setExtractedNumbers] = useState([]);
-
     const re = /^[0-9\b]+$/;
 
+
+    const handleEvents = (data) => {
+        console.log(data)
+        if (data.event === 'GameStarted') {
+            setGameState(prevState => ({...prevState, gameStarted: true}));
+            setWaitingForPlayers(false);
+        } else if (data.event === 'NumberExtracted') {
+            console.log("NumberExtracted")
+            console.log(`${data.returnValues._gameId}` === stateRef.current.gameId )
+            console.log(!extractedNumbers.includes(data.returnValues.number))
+            if (`${data.returnValues._gameId}` === stateRef.current.gameId && !exNumRef.current.includes(data.returnValues.number)) {
+                setExtractedNumbers([...exNumRef.current, data.returnValues.number]);
+                notifyEvent();
+                console.log("once")
+            }
+        } else if (data.event === 'ReceiveAccuse') {
+            if (stateRef.current.gameStarted) {
+                console.log(data.returnValues);
+                if (`${data.returnValues._gameId}` === stateRef.current.gameId)
+                    setAccusePending(true);
+
+            }
+        } else if (data.event === 'ConfirmRemovedAccuse') {
+            if (stateRef.current.gameStarted) {
+                if (`${data.returnValues._gameId}` === stateRef.current.gameId) {
+                    setAccusePending(false);
+                }
+            }
+        } else if (data.event === 'NotBingo') {
+            if (
+                parseInt(data.returnValues._gameId) === parseInt(stateRef.current.gameId)
+                && accounts[0].toLowerCase() !== data.returnValues.player.toLowerCase()
+            ) {
+                console.log('Not bingo!');
+                toast.error('Qualcuno ha chiamato bingo ma non lo era!');
+            }
+        } else if (data.event === 'GameEnded') {
+            console.log(data.returnValues);
+            if (`${data.returnValues._gameId}` === stateRef.current.gameId && data.returnValues._winner.toLowerCase() !== accounts[0].toLowerCase()) {
+                toast('Gioco terminato!', {icon: 'ℹ️'});
+                setGameState(prevState => ({
+                    ...prevState,
+                    gameStarted : false,
+                    gameEnded : true,
+                    amountWon : utils.fromWei(data.returnValues._amountWonWei, 'ether'),
+                    winningAddress : data.returnValues._winner.toLowerCase(),
+                    creatorRefund : utils.fromWei(data.returnValues._creatorRefundWei, 'ether'),
+                    winningReason : data.returnValues._reason,
+                    creatorWon : data.returnValues._creatorWon,
+                }));
+            }
+        } else {
+            console.log(data);
+        }
+
+    }
+
+
+    useEffect(() => {
+        console.log("EVENTS BINDED")
+
+        contract._events.allEvents().on('data', handleEvents)
+        return () => {
+            console.log("UNBINDEVENTS")
+            contract._events.allEvents().off('data', handleEvents);
+        }
+    }, []);
+
+    useEffect(() => {
+        stateRef.current = gameState;
+    }, [gameState]);
+
+    useEffect(() => {
+        exNumRef.current = extractedNumbers;
+    }, [extractedNumbers]);
 
     const joinGame = () => {
         setLoading(true);
@@ -51,12 +128,12 @@ const JoinGame = ({ setView, randomGame }) => {
             value: utils.toWei(ethBet, 'ether')
 
         })
-            .then((logArray) => {
+        .then((logArray) => {
             console.log(parseInt(logArray.events.GameJoined.returnValues._gameId));
             setLoading(false);
             setWaitingForPlayers(true);
-            })
-            .catch((error) => {
+        })
+        .catch((error) => {
             console.error('Error joining game:', error);
             setLoading(false);
             toast.error('Non posso entrare nel gioco selezionato!');
@@ -69,7 +146,7 @@ const JoinGame = ({ setView, randomGame }) => {
         setLoading(true);
         const seed = Math.floor(Math.random() * 10000000);
         let id = gameState.gameId
-        if (randomGame && gameState.gameId != '0') {
+        if (randomGame && gameState.gameId !== '0') {
             setGameState(prevState => ({...prevState, gameId:  '0'}));
             id = '0'
         }
@@ -131,92 +208,11 @@ const JoinGame = ({ setView, randomGame }) => {
         });
     };
 
-    useEffect(() => {
-        try {
-            contract._events.GameStarted().on('data', event => {
-                console.log('Game started -> ' + event);
-                setGameState(prevState => ({...prevState, gameStarted: true}));
-                setWaitingForPlayers(false);
-            }).on('error', console.error);
-        } catch {/** */}
-    }, [contract, contract._events, contract._events.GameStarted()]);
 
-    useEffect(() => {
-        try {
-            contract._events.NumberExtracted().on('data', event => {
-                if (`${event.returnValues._gameId}` === gameState.gameId && !extractedNumbers.includes(event.returnValues.number)) {
-                    setExtractedNumbers([...extractedNumbers, event.returnValues.number]);
-                    notifyEvent();
-                }
 
-            }).on('error', console.error);
-        } catch {/** */}
-    }, [contract._events.NumberExtracted()]);
 
-    useEffect(() => {
-        try {
-            if (gameState.gameStarted) {
-                contract._events.ReceiveAccuse().on('data', event => {
-                    console.log(event.returnValues);
-                    if (`${event.returnValues._gameId}` === gameState.gameId) {
-                        setAccusePending(true);
-                    }
-                }).on('error', console.error);
-            }
-        } catch {/** */}
-    }, [contract._events.ReceiveAccuse()]);
 
-    useEffect(() => {
-        try {
-            if (gameState.gameStarted) {
-                contract._events.ConfirmRemovedAccuse().on('data', event => {
-                    if (`${event.returnValues._gameId}` === gameState.gameId) {
-                        console.log(event);
-                        setAccusePending(false);
-                    }
-                }).on('error', console.error);
-            }
-        } catch {/** */}
-    }, [contract._events.ConfirmRemovedAccuse()]);
 
-    useEffect(() => {
-        try {
-            if (gameState.gameStarted) {
-                contract._events.NotBingo().on('data', event => {
-                    if (
-                        parseInt(event.returnValues._gameId) === parseInt(gameState.gameId)
-                        && accounts[0].toLowerCase() !== event.returnValues.player.toLowerCase()
-                    ) {
-                        console.log('Not bingo!');
-                        toast.error('Qualcuno ha chiamato bingo ma non lo era!');
-                    }
-                }).on('error', console.error);
-            }
-        } catch {/** */}
-    }, [contract._events.NotBingo()]);
-
-    useEffect(() => {
-        try {
-            if (gameState.gameStarted) {
-                contract._events.GameEnded().on('data', event => {
-                    console.log(event.returnValues);
-                    if (`${event.returnValues._gameId}` === gameState.gameId && event.returnValues._winner.toLowerCase() !== accounts[0].toLowerCase()) {
-                        toast('Gioco terminato!', {icon: 'ℹ️'});
-                        setGameState(prevState => ({
-                            ...prevState,
-                            gameStarted : false,
-                            gameEnded : true,
-                            amountWon : utils.fromWei(event.returnValues._amountWonWei, 'ether'),
-                            winningAddress : event.returnValues._winner.toLowerCase(),
-                            creatorRefund : utils.fromWei(event.returnValues._creatorRefundWei, 'ether'),
-                            winningReason : event.returnValues._reason,
-                            creatorWon : event.returnValues._creatorWon,
-                        }));
-                    }
-                }).on('error', console.error);
-            }
-        } catch {/** */}
-    }, [contract, contract._events, gameState, gameState.gameStarted, contract._events.GameEnded()]);
 
     useEffect(() => {
         if (!gameState.result) {return;}
