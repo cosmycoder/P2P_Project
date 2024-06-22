@@ -259,8 +259,8 @@ struct Info {
     }
 ```
 
-Qui possiamo vedere che ci salviamo l'address del creatore del game e di tutti i joiners, oltre che alle ovvie informazioni sul game come il tetto massimo di giocatori e il valore da scommettere in ethereum. Ci salviamo inoltre anche il MerkleRoot del creatore e di tutti i joiners attraverso un mapping.
-Le ultime variabili sono utilizzate rispettivamente per il controllo sui numeri estratti e sull'accusa dei giocatori per il creatore del game che ha la responsabilita di estrarre i numeri del bingo.
+Come possiamo vedere, viene salvato l'address del creatore del game e di tutti i joiners, oltre che alle ovvie informazioni sul game come il tetto massimo di giocatori e il valore da scommettere in ethereum. Ci salviamo inoltre anche il MerkleRoot del creatore e di tutti i joiners attraverso un mapping.
+Le ultime variabili sono utilizzate rispettivamente per il controllo sui numeri estratti e sull'accusa dei giocatori per il creatore del game che ha la responsabilità di estrarre i numeri del bingo.
 
 ## Vincoli e regole di **BingoEth**
 
@@ -422,7 +422,7 @@ Se si deve verificare un elemento con indice maggiore di$15$, ad esempio $20$, l
 
 # Manuale utente
 
-## Utilizzo istanza pubblica
+## Utilizzo dell'istanza pubblica
 
 Per rendere più fruibile l'utilizzo dell'applicazione sviluppata, è stato eseguito il deploy di **BingoEth** su un server privato insieme a un'istanza di Ganache, così da non dover configurare nulla se non la rete su Metamask. È possibile accedere al progetto all'url [https://bingoeth.alteregofiere.com/](https://bingoeth.alteregofiere.com/).
 
@@ -470,18 +470,29 @@ Steps:
 Eseguiti i passi indicati, inizierà il processo di build del container docker. Dopodiché si avvierà il container che compilerà il contratto, per poi avviare l'applicazione **BingoEth**.
 Una volta terminato il processo di build, sarà possibile accedere all'applicazione tramite browser all'url [http://localhost:80](http://localhost:80).
 
-Gli account verranno configurati su un'istanza di ganache locale (`127.0.0.1:7545`).
+Gli account verranno configurati su un'istanza di ganache locale all'indirizzo (`http://127.0.0.1:7545`).
 
 # Valutazione del consumo di gas
 
-- Il deploy del progetto si consuma una quantita di gas pari a 3653200 Gas
+<!-- - Il deploy del progetto si consuma una quantita di gas pari a 3653200 Gas
 - La funzione CreateGame si consuma 179890 Gas
 - La funzione JoinGame consuma 131088 Gas
 - La sola funzione accuse consuma 67810 Gas
 - La sola funzione di CheckAccuse consuma ~ 1300+(2500×n) Gas dove n = numero di joiners
 - L'estrazione di un numero ~ 70705 Gas * un massimo di 75 numeri = massimo 5302875 Gas
 - L'estrazione delle informazioni su un game ~ 36536 Gas
-- Stima per la sottomissione di una board con SubmitBoard ~ 40181 Gas
+- Stima per la sottomissione di una board con SubmitBoard ~ 40181 Gas -->
+
+|      Funzione      |   Gas Consumato  |                               Note                               |
+|:------------------:|:----------------:|:----------------------------------------------------------------:|
+|  Deploy contratto  |      3653200     |                                                                  |
+|    `createGame`    |      179890      |                                                                  |
+|     `joinGame`     |      131088      |                                                                  |
+|      `accuse`      |       67810      |                                                                  |
+|    `checkAccuse`   |  $1300+(2500\times n)$ |                  Dove $n$ è il numero di joiners                 |
+|   `extractNumber`  | $70705 \times m$ | $m$ è il numero di tentativi (massimo 75, quindi 5302875 Gas)    |
+|    `getInfoGame`   |       36536      |                                                                  |
+|    `submitBoard`   |       40181      |                                                                  |
 
 ## Valutazione di esempio con un gioco con un creatore e 3 joiners
 
