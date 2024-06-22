@@ -27,7 +27,7 @@ header-includes: |
 
 # Introduzione
 
-L'applicazione sviluppata come progetto finale del corso di Peer To Peer & Blockchains si chiama BingoEth e si tratta di un'implementazione del bingo (la versione più famosa del bingo, quella americana da 75 numeri) realizzata in React/javascript per la parte di front-end e in Solidity per la parte di smart contract. È possibile consultare il repository su [GitHub](https://github.com/leomanne/P2P_Project.git "leggi").
+L'applicazione sviluppata come progetto finale del corso di Peer To Peer & Blockchains si chiama BingoEth e si tratta di un'implementazione del bingo (la versione più famosa del bingo, quella americana da 75 numeri) realizzata in React/javascript per la parte di front-end e in Solidity per la parte di smart contract. È possibile consultare il repository su [GitHub](https://github.com/leomanne/P2P_Project.git).
 
 # Struttura del progetto
 
@@ -54,41 +54,45 @@ Il front-end dell'applicazione BingoEth è sviluppato in React e consente agli u
 - Partecipazione a una partita esistente facendo una join accettando o meno la cifra da scommettere.
 - Visualizzazione dello stato del gioco in tempo reale.
 
+
+Appena entrati nella nostra Dapp raggiungeremo la schermata principale (Figura 1) dalla quale potremo fare principalmente due cose:
+
+- creare una nuova partita.
+- unirci ad una partita casuale o specifica.
+
 ![Home page](./immagini/homepage.png){ width=50% }
 
-Appena entrati nella nostra Dapp vedremo una schermata di home (Figura 1), vediamo subito che possiamo fare due cose principali:
 
-- unirci ad una partita casuale o specifica.
-- creare una nuova partita.
+### Creazione partita
 
-### Creazione Game
+
+Per creare la stanza (Figura 2) è necessario inserire il numero massimo di giocatori e l'importo della scommessa per partecipare. Questi due valori abbiamo deciso debbano essere (per semplicità) interi. Una volta inseriti i dati, il pulsante `Scommetti` si abiliterà e, premendolo, verrà chiamata la funzione del contratto `createGame` di cui parleremo nel prossimo capitolo.
 
 ![Creazione della stanza di gioco](./immagini/creazionegame.png){ width=50% }
-
-Per creare la stanza (Figura 2) è necessario inserire il numero massimo di giocatori e l'importo della scommessa per partecipare. Questi due valori abbiamo deciso debbano essere (per semplicita) interi,  Una volta inseriti i dati il pulsante `Scommetti` si abiliterà e, premendolo, verrà chiamata la funzione del contratto `creategame` di cui parleremo nel prossimo capitolo.
 
 
 Solo dopo aver premuto il pulsante scommetti ci verra mostrata la schermata di attesa (Figura 3), in cui attenderemo di aver raggiunto il numero totale di utenti che abbiamo scelto precedentemente.
 
 ![Attesa dell'unione di altri player](./immagini/attesaCreator.png){ width=50% }
 
+**Nota Bene:** il numero di giocatori specificato NON comprende il creatore del gioco, quindi se si specificherà un numero $n$ di giocatori, la partita si svolgerà fra $n+1$ giocatori.
 
-### Join delle stanze
+### Entrare in una stanza
 
-Per eseguire i join delle stanze abbiamo due opzioni:
+Per accedere a una stanza abbiamo due opzioni:
 
 - scegliere una stanza random
 - scegliere una stanza specifica, sapendo l'ID della stanza
 
 
-Se cliccato il pulsante `Entra in una stanza` ci si aprira una schermata (Figura 4) in cui dobbiamo obbligatoriamente inserire un ID per selezionare la camera.
+Se cliccato il pulsante `Entra in una stanza` ci si aprira una schermata (Figura 4) in cui dobbiamo obbligatoriamente inserire un ID per selezionare il gioco a vogliamo partecipare.
 
 
 ![Pagina di raccolta informazioni sui game](./immagini/selezionacamera.png){ width=50% }
 
 
 
-Se l'ID selezionato risulta essere corretto e ci sono ancora posti disponibili allora apparira la schermata contenente (Figura 5):
+Se l'ID selezionato risulta essere corretto e ci sono ancora posti disponibili allora apparirà la schermata contenente (Figura 5):
 
 - ID della stanza scelta
 - Gli Eth da scommettere per poter unirsi alla camera
@@ -99,33 +103,35 @@ Se l'ID selezionato risulta essere corretto e ci sono ancora posti disponibili a
 
 A questo punto se viene cliccato il pulsante `Entra nella stanza` L'ETH scommesso verra prelevato e il numero dei giocatori verra aggiornato attraverso la chiamata di funzione del contratto `JoinGame` di cui parleremo nel prossimo capitolo.
 
-Per il pulsante `Entra nella stanza randomica` invece la schermata rimane simile, viene solo rimosso il valore da inserire e viene chiesto solo di cliccare un pulsante per richiedere le informazioni per una stanza ancora disponibile casuale. La schermata di scelta per la camera rimane uguale invece (Figura 5).
+Cliccando invece sul pulsante `Entra in una stanza random`, si andranno a richiedere le informazioni su un gioco scelto casualmente dal contratto, al quale potremo poi decidere se accedere o meno (Figura 5).
 
 ### Fase di gioco
 
-Una volta che tutti i giocatori sono entrati si avvia la partita e tutti i giocatori creano la propria tabella (parleremo meglio di questo argomento nel capitolo sulla sicurezza).
+Una volta che tutti i giocatori sono entrati si avvia la partita e verrà caricata la cartella creata dal client al momento dell'ingresso nella stanza (parleremo meglio di questo argomento nel capitolo sulla sicurezza).
 
 #### Lato Creatore della stanza
 
 
-Come detto in precedenza solo il creatore delle stanze si prende carico della responsabilita di chiedere l'estrazione dei numeri al contratto. E come tale è in una posizione di comando rispetto agli altri joiners. Vediamo la schermata di gioco (Figura 6):
+Come detto in precedenza solo il creatore delle stanze si prende carico della responsabilita di chiedere l'estrazione dei numeri al contratto e come tale è in una posizione di comando rispetto agli altri joiners. Vediamo la schermata di gioco (Figura 6):
 
 ![Schermata di gioco del creatore](./immagini/TabellaCreator.png){ width=50% }
 
 Come si vede dall'immagine (Figura 6) abbiamo:
 
 - La lista dei valori estratti da 1 a 75.
-- la tabella contenente i numeri scelti CASUALMENTE lato client. abbiamo rimosso la possibilita di scelta dei numeri per evitare possibili problemi di imbrogli dai giocatori. Sara cura dei giocatori selezionare la casella corretta, come nel vero gioco.
-- Un pulsante per estrarre i numeri, chiamando la funzione `ExtractNumber` del contratto.
-- Un pulsante per fare submit della cartella quando si ha fatto bingo. Il pulsante rimane disabilitato fino a che non si ha selezionato almeno 5 caselle in fila per fare bingo.
+- la tabella contenente i numeri scelti casualmente lato client. Abbiamo rimosso la possibilità di scelta dei numeri per evitare possibili problemi di imbrogli dai giocatori. Sarà cura dei giocatori selezionare la casella corretta, come nel vero gioco.
+- Un pulsante per estrarre i numeri, chiamando la funzione `extractNumber` del contratto.
+- Un pulsante per inviare la propria combinazione vincente al contratto quando si ha fatto bingo. Il pulsante si abilita solo se effettivamente sono state selezionate le casella appartenenti a una combinazione vincente. Questa scelta lato client è stata presa per evitare lo spam di richieste al contratto.
 
 #### Lato Joiner della stanza
 
+
+Dato che solo il creatore del gioco può estrarre i numeri, abbiamo dato ai joiner della stanza la possibilità di denunciarlo se cerca di bloccare il gioco per far allontanare i giocatori. Per questo motivo, è stato aggiunto un pulsante `Accusa`. Se premuto, questo pulsante rimuove il creatore dalla partita dopo un certo numero di secondi, terminando il gioco.
+
 ![Schermata di gioco per i joiner](./immagini/TabellaJoiner.png){ width=50% }
 
-Dato che solo il creatore del gioco può estrarre i numeri, abbiamo dato ai joiner della stanza la possibilità di denunciarlo se cerca di bloccare il gioco per far allontanare i giocatori. Per questo motivo, è stato aggiunto un pulsante `Denuncia`. Se premuto, questo pulsante rimuove il creatore dalla partita dopo un certo numero di secondi, terminando il gioco.
 
-Altre possibili implementazioni avrebbero potuto includere una logica che trasformava chi denunciava nel nuovo creatore. Tuttavia, abbiamo optato per una soluzione più semplice. Se la denuncia viene confermata, il creatore dovrà estrarre un numero entro un certo limite di tempo. Se lo fa, il gioco prosegue normalmente; altrimenti, tutti i giocatori riceveranno indietro il proprio denaro, insieme a una percentuale dei soldi scommessi dal creatore del gioco.
+Altre possibili implementazioni avrebbero potuto includere una logica che trasformava chi denunciava nel nuovo creatore. Tuttavia, abbiamo optato per una soluzione più semplice. Se la denuncia viene confermata, il creatore dovrà estrarre un numero entro un certo limite di tempo. Se lo fa, il gioco prosegue normalmente; altrimenti, tutti i giocatori riceveranno indietro il proprio denaro, insieme alla puntata del creatore, che verrà divisa per tutti i giocatori.
 
 
 ![Schermata di denuncia per i joiner](./immagini/DenunciaJoiner.png){ width=50% }
@@ -143,7 +149,7 @@ Sotto vediamo i codici per queste funzionalita:
 
 ### Funzione `createGame`
 
-La funzione `createGame viene chiamata per avviare una nuova partita. Verifica i parametri di input come il numero massimo di giocatori consentiti e l'ammontare della scommessa. Successivamente, genera un ID univoco per la partita e inizializza un nuovo oggetto di gioco nella lista. Vengono impostati vari parametri, tra cui il creatore della partita, l'ammontare della scommessa, il merkle root delle carte del creatore, eccetera. Infine, aggiunge la partita alla lista dei giochi disponibili e emette un evento per segnalare la creazione della partita.
+La funzione `createGame` viene chiamata per avviare una nuova partita. Verifica i parametri di input come il numero massimo di giocatori consentiti e l'ammontare della scommessa. Successivamente, genera un ID univoco per la partita e inizializza un nuovo oggetto di gioco nella lista. Vengono impostati vari parametri, tra cui il creatore della partita, l'ammontare della scommessa, il merkle root delle carte del creatore, eccetera. Infine, aggiunge la partita alla lista dei giochi disponibili e emette un evento per segnalare la creazione della partita.
 
 ```java
 function createGame(uint _maxJoiners, uint _betAmount, bytes32 _cardMerkleRoot)
@@ -193,10 +199,10 @@ public payable {
 
 ### Funzione `extractNumber`
 
-La funzione `extractNumber` gestisce l'estrazione dei numeri nel gioco. Verifica se tutti i 75 numeri consentiti sono stati estratti. Genera un nuovo numero utilizzando una funzione per generare numeri casuali e controlla se è già stato estratto. Se il numero è un duplicato, ne genera uno nuovo fino a trovare un numero unico. Aggiunge quindi il numero estratto alla lista dei numeri estratti per il gioco corrispondente. Se viene specificato, resetta l'accusa e l'accusatore nel gioco. Infine, emette eventi per informare sul numero estratto o segnalare la fine del gioco se tutti i numeri sono stati estratti.
+La funzione `extractNumber` gestisce l'estrazione dei numeri nel gioco utilizzando una funzione per generare numeri casuali, facendo un check per evitare di estrarre numeri duplicati. Aggiunge quindi il numero estratto alla lista dei numeri estratti per il gioco corrispondente. Se specificato, resetta l'accusa e l'accusatore nel gioco. Infine, emette eventi per informare sul numero estratto o segnalare la fine del gioco se tutti i numeri sono stati estratti.
 
 ```java
-function extractNumber(int256 _gameId,bool accused) public {
+function extractNumber(int256 _gameId, bool accused) public {
     // Controlla se tutti i numeri sono stati estratti
     require(gameList[_gameId].numbersExtracted.length <= 75,
         "All numbers have been extracted!");
@@ -256,7 +262,7 @@ struct Info {
 Qui possiamo vedere che ci salviamo l'address del creatore del game e di tutti i joiners, oltre che alle ovvie informazioni sul game come il tetto massimo di giocatori e il valore da scommettere in ethereum. Ci salviamo inoltre anche il MerkleRoot del creatore e di tutti i joiners attraverso un mapping.
 Le ultime variabili sono utilizzate rispettivamente per il controllo sui numeri estratti e sull'accusa dei giocatori per il creatore del game che ha la responsabilita di estrarre i numeri del bingo.
 
-## Vincoli
+## Vincoli e regole di **BingoEth**
 
 I seguenti vincoli sono stati implementati per garantire il corretto funzionamento del gioco:
 
@@ -264,6 +270,7 @@ I seguenti vincoli sono stati implementati per garantire il corretto funzionamen
 - **La casella centrale**: La casella centrale è una casella jolly e quindi valida di base.
 - **Il creatore**: Il creatore si assume il ruolo di chiedere al contratto di estrarre i numeri.
 - **Limite scommesse**:  I giocatori non possono scommettere piu di 1000 ETH.
+- **Numero di cartelle**: Per semplicità un giocatore può comprare una sola cartella alla volta.
 
 ## Uso di Merkle Tree
 
@@ -272,7 +279,7 @@ Abbiamo deciso di utilizzare un Merkle Tree per garantire l'integrità dei dati 
 
 ### Generazione del Merkle Tree
 
-Il codice per la generazione del Merkle Tree si trova nella funzione `generateMerkleTree`.
+Il codice per la generazione del Merkle Tree si trova all'interno del file `client/src/services/TableService.js` ed è implementato nella funzione `generateMerkleTree`.
 
 **Funzionalità:**
 - La funzione prende in input una tabella (`table`), rappresentata come un array.
@@ -307,11 +314,11 @@ export function generateMerkleTree(table) {
 }
 ```
 
-Una particolarità dell calcolo del merkle tree in questo contesto è che il numero di elementi nella cartella del bingo non è una potenza del 2, infatti viene considerato un array di 24 elementi (non includiamo la casella centrale essendo sempre valida) rappresentante la cartella del giocatore:
+Una particolarità del calcolo del merkle tree in questo contesto è che il numero di elementi nella cartella del bingo non è una potenza del 2, infatti viene considerato un array di 24 elementi (non includiamo la casella centrale essendo sempre valida) rappresentante la cartella del giocatore:
 
 ![MerkleTree](./immagini/MerkleTree.png)
 
-Come possiamo vedere dal diagramma al livello $3$, l'elemento con indice $2$ viene duplicato per permettere il calcolo dell'elemento $(4,1)$.
+Come possiamo vedere dal diagramma, al livello $3$ l'elemento con indice $2$ viene duplicato per permettere il calcolo dell'elemento $(4,1)$.
 Questa soluzione è di semplice implementazione, infatti, durante il calcolo del merkle tree, è sufficiente controllare all'interno del ciclo for se si ha un elemento successivo a quello corrente con cui eseguire l'hash, altrimenti si esegue l'hash *"raddoppiando"* il nodo corrente:
 
 ```javascript
@@ -323,6 +330,8 @@ for (let j = 0; j < tmp.length; j += 2) {
     }
 }
 ```
+
+### Generazione della Merkle Proof
 
 Così come nella generazione dell'albero, si deve prestare attenzione anche alla generazione delle proof. In caso di bingo, a seconda se la combinazione contiene o no la casella centrale, la proof consiste in un array contenente tanti array quanti sono i numeri estratti da verificare:
 
@@ -338,8 +347,8 @@ La funzione generateMerkleProof prende in input la cartella `card` di 24 element
 ```javascript
 export const generateMerkleProof = (card, result) => {
     const proofs = [];
-    const merkleTree = generateMerkleTree(card);
-    const leaves = merkleTree[0];
+    const mT = generateMerkleTree(card);
+    const leaves = mT[0];
     for (let i = 0; i < result.length; i++) {
         if (!result[i]) {
             continue;
@@ -353,8 +362,8 @@ export const generateMerkleProof = (card, result) => {
         proof.push(stringToBytes32(card[i].toString()));
         proof.push(stringToBytes32(i.toString()));
 
-        for (let level = 0; level < merkleTree.length - 1; level++) {
-            const currentLevel = merkleTree[level];
+        for (let level = 0; level < mT.length - 1; level++) {
+            const currentLevel = mT[level];
             const isRightNode = currentIndex % 2 === 1;
             const siblingIndex = isRightNode ? currentIndex - 1 : currentIndex + 1;
 
@@ -367,7 +376,7 @@ export const generateMerkleProof = (card, result) => {
         if (index > 15) {
             let last = proof.pop();
             proof.push(
-                `${merkleTree[merkleTree.length - 3][merkleTree[merkleTree.length - 3].length - 1]}`
+                `${mT[mT.length - 3][mT[mT.length - 3].length - 1]}`
             );
             proof.push(last);
         }
@@ -403,66 +412,13 @@ function verifyMerkleProof(
 ```
 
 #### Esempio 1
-Se si deve verificare un elemento con indice minore o uguale a $15$, ad esempio $7$ la sua merkle proof sarà: $$[element, 7, H_{0,6}, H_{1,2}, H_{2,0}, H_{3,1}, H_{4,1} ]$$
+Se si deve verificare un elemento con indice minore o uguale a $15$, ad esempio $7$, la sua merkle proof sarà: $$[element, 7, H_{0,6}, H_{1,2}, H_{2,0}, H_{3,1}, H_{4,1} ]$$
 
 ![Merkle Proof dell'indice 7 - In verde gli hash forniti dalla proof, in viola quelli calcolati](./immagini/MerkleProof7.png)
 
 #### Esempio 2
-Se si deve verificare un elemento con indice maggiore di$15$, ad esempio $20$ la sua merkle proof sarà: $$[element, 20, H_{0,21}, H_{1,11}, H_{2,3}, H_{3,2}, H_{4,0} ]$$
+Se si deve verificare un elemento con indice maggiore di$15$, ad esempio $20$, la sua merkle proof sarà: $$[element, 20, H_{0,21}, H_{1,11}, H_{2,3}, H_{3,2}, H_{4,0} ]$$
 ![Merkle Proof dell'indice 20 - In verde gli hash forniti dalla proof, in viola quelli calcolati](./immagini/MerkleProof20.png)
-
-<!-- ### Generazione  delle Merkle Proofs
-
-Il codice per la generazione delle Merkle Proofs si trova nella funzione `generateMerkleProof`.
-
-**Funzionamento:**
-- La funzione prende in input una carta (`card`) e un array di risultati (`result`).
-- Viene generato il Merkle Tree utilizzando la funzione `generateMerkleTree`.
-- Per ogni elemento nella carta con risultato valido, viene generata una proof.
-- La proof contiene gli hash dei nodi lungo il percorso dal nodo foglia alla radice del Merkle Tree.
-- Le proofs vengono poi verificate utilizzando la funzione `verifyMerkleProof`.
-
-```javascript
-export const generateMerkleProof = (card, result) => {
-    const proofs = [];
-    const merkleTree = generateMerkleTree(card);
-    console.log(merkleTree);
-    const leaves = merkleTree[0];
-    for (let i = 0; i < result.length; i++) {
-        if (!result[i]) {
-            continue;
-        }
-        const elementHash = utils.soliditySha3(card[i].toString());
-        const index = leaves.indexOf(elementHash);
-
-        let proof = [];
-        let currentIndex = index;
-
-        proof.push(stringToBytes32(card[i].toString()));
-        proof.push(stringToBytes32(i.toString()));
-
-        for (let level = 0; level < merkleTree.length - 1; level++) {
-            const currentLevel = merkleTree[level];
-            const isRightNode = currentIndex % 2 === 1;
-            const siblingIndex = isRightNode ? currentIndex - 1 : currentIndex + 1;
-
-            if (siblingIndex < currentLevel.length) {
-                proof.push(`${currentLevel[siblingIndex]}`);
-            }
-
-            currentIndex = Math.floor(currentIndex / 2);
-        }
-        if (index > 15) {
-            let last = proof.pop();
-            proof.push(`${merkleTree[merkleTree.length - 3]
-                [merkleTree[merkleTree.length - 3].length - 1]}`);
-            proof.push(last);
-        }
-        proofs.push(proof);
-    }
-    return proofs;
-};
-``` -->
 
 # Manuale utente
 
