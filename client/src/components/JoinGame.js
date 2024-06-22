@@ -43,8 +43,10 @@ const JoinGame = ({ setView, randomGame }) => {
     const handleEvents = (data) => {
         console.log(data)
         if (data.event === 'GameStarted') {
-            setGameState(prevState => ({...prevState, gameStarted: true}));
-            setWaitingForPlayers(false);
+            if (`${data.returnValues._gameId}` === stateRef.current.gameId) {
+                setGameState(prevState => ({...prevState, gameStarted: true}));
+                setWaitingForPlayers(false);
+            }
         } else if (data.event === 'NumberExtracted') {
             console.log("NumberExtracted")
             console.log(`${data.returnValues._gameId}` === stateRef.current.gameId )
@@ -93,7 +95,6 @@ const JoinGame = ({ setView, randomGame }) => {
         } else {
             console.log(data);
         }
-
     }
 
 
