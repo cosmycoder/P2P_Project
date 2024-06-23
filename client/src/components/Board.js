@@ -40,10 +40,10 @@ const Row = ({size, rowNums, index, handleTileClick}) => {
 const Tile = ({number, handleTileClick, index}) => {
     return (
         <button
-            className="h-20 w-20
+            className="h-16 w-16 lg:h-20 lg:w-20
                        border dark:text-white
                        text-black dark:border-gray-50
-                       border-gray-700 rounded-md text-3xl m-auto
+                       border-gray-700 rounded-md text-xl lg:text-3xl m-auto
                        hover:dark:bg-slate-800 hover:bg-slate-200"
             onClick={(event) => {
                 let state;

@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 body {
-  @apply dark:bg-slate-700 bg-slate-50 overflow-hidden
+  @apply dark:bg-slate-700 bg-slate-50 lg:overflow-hidden
 }
 
 .tile {
