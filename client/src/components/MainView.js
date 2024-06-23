@@ -30,7 +30,7 @@ const MainView = () => {
                 Entra in una stanza
               </button>
             </div>
-            <div className="flex justify-center items-center">
+            <div className="flex justify-center items-center m-10">
               {isDarkMode ? (
                 <button
                   className="theme-btn"
