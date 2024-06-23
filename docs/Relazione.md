@@ -27,7 +27,11 @@ header-includes: |
 
 # Introduzione
 
-L'applicazione sviluppata come progetto finale del corso di Peer To Peer & Blockchains si chiama BingoEth e si tratta di un'implementazione del bingo (la versione più famosa del bingo, quella americana da 75 numeri) realizzata in React/javascript per la parte di front-end e in Solidity per la parte di smart contract. È possibile consultare il repository su [GitHub](https://github.com/leomanne/P2P_Project.git).
+L'applicazione sviluppata come progetto finale del corso di Peer To Peer & Blockchains si chiama BingoEth e si tratta di un'implementazione del bingo (la versione più famosa del bingo, quella americana con cartelle da 75 numeri) realizzata in React/javascript per la parte di front-end e in Solidity per la parte di smart contract, utilizzando truffle com framework.
+Link ai repository del progetto:
+
+- Leonardo Manneschi - repository di lavoro [https://github.com/leomanne/P2P_Project](https://github.com/leomanne/P2P_Project)
+- Leonardo Scoppitto - mirror del repository di lavoro [https://github.com/leomanne/P2P_Project](https://github.com/skiby7/BingoEth)
 
 # Struttura del progetto
 
@@ -44,21 +48,66 @@ Il progetto è stato organizzato come segue:
 .1 Dockerfile/docker-compose.yml $\rightarrow$ \small{Container docker per il test e il deploy}.
 }
 
+È stato scelto di utilizzare un container docker per eseguire sia il test che il deploy del progetto così da uniformare l'ambiente di sviluppo, automatizzare il più possibile i passaggi di compilazione sia del client che dello smart contract e avere un controllo preciso sulle dipendenze del progetto.
+
+# Manuale utente
+
+## Utilizzo dell'istanza pubblica
+
+Per rendere più fruibile l'utilizzo dell'applicazione sviluppata, è stato eseguito il deploy di **BingoEth** su un server privato insieme a un'istanza di Ganache, così da non dover configurare nulla se non la rete su Metamask. È possibile accedere al progetto all'url [https://bingoeth.alteregofiere.com/](https://bingoeth.alteregofiere.com/).
+
+Gli account disponibili con le relative chiavi private sono:
+
+|Account|Chiave privata|
+|:-----:|:------------:|
+| \scriptsize `0xC2F7...8A8a` |\scriptsize `0x99409bd109959b84aae9234ce755a39a6df4c009a53c6a81ea0713d65bd80eb7` |
+| \scriptsize `0x3530...587c` |\scriptsize `0x98d1ccd915ef23a2a088dfec9a47960f7de3b71d5f3c2aff53b7cb85e411adc5` |
+| \scriptsize `0x97f4...e766` |\scriptsize `0xe41c4f1aad19f7238246df7712f748c5cf4d6ac1c8a78e1b3aafb4a74e6ae39d` |
+| \scriptsize `0x0fac...b78E` |\scriptsize `0x42941bc9871700dade0f40b607a8e0528fd9578dbefcf4abe6b4f4b2eea817b0` |
+| \scriptsize `0x2b61...d04a` |\scriptsize `0x7a956b721714c8708ff22b25b193dae7efc7eaec77fe5b40c5c2944fc42feebe` |
+| \scriptsize `0x9307...d846` |\scriptsize `0x9d19b8c0ad94ac66122485684d44bfa782dd84def2c2382b991f3632f3b9a294` |
+| \scriptsize `0x7670...a59A` |\scriptsize `0x8b93665547a073f7055c043ce4e6115a13e0900d18e23d206c9b0b17f8bf27e8` |
+| \scriptsize `0x1923...2a90` |\scriptsize `0x93c2d0ce2d1398fd5585c348a7befd000fecfebd0c9d5005550e820317ab0a47` |
+| \scriptsize `0xc074...Bf56` |\scriptsize `0xd994441bc950b1d80191c8a0454a7b186a3562a8cf486390d4f740a713384d81` |
+| \scriptsize `0xe50a...00B1` |\scriptsize `0x9f6e155cd2faf86bb96331732d9f5c6727fe0858773d7ad141f67425e7b1fe1b` |
+
+\pagebreak
+
+
+La configurazione della rete su MetaMask è la seguente:
+
+![Configurazione MetaMask](./immagini/metamask.png){width=30%}
+
+
+## Esecuzione da sorgente
+
+> *Nota: per l'utilizzo del progetto è consigliato avere docker (consultare [https://docs.docker.com/get-docker/](https://docs.docker.com/get-docker/)) installato sul proprio pc.*
+
+Steps:
+
+1. Clonare il repository da [https://github.com/leomanne/P2P_Project](https://github.com/leomanne/P2P_Project) o da [https://github.com/skiby7/BingoEth](https://github.com/skiby7/BingoEth) (il secondo repository è il mirror del primo) o scompattare l'archivio BingoEth.zip
+2. Aprire il terminale/powershell e spostarsi dentro la directory del progetto
+3. Eseguire il comando `docker compose up`
+
+Eseguiti i passi indicati, inizierà il processo di build del container docker (ci vorrà qualche minuto). Dopodiché si avvierà il container che compilerà il contratto, per poi avviare l'applicazione **BingoEth**.
+Una volta terminato il processo di build, sarà possibile accedere all'applicazione tramite browser all'url [http://localhost:80](http://localhost:80).
+
+Gli account verranno configurati su un'istanza di ganache locale all'indirizzo (`http://127.0.0.1:7545`).
+
+\pagebreak
+
 # Funzionamento del progetto
 
 ## Lato front-end
 
-Il front-end dell'applicazione BingoEth è sviluppato in React e consente agli utenti di interagire con il contratto smart su Ethereum per giocare a bingo. Le principali funzionalità del front-end includono:
+Il front-end dell'applicazione BingoEth è stato sviluppato in React e consente agli utenti di interagire con lo smart contract e poter quindi giocare a bingo scommettendo Ethereum. Le principali funzionalità del front-end sono:
 
-- Creazione di una nuova partita scegliendo il numero massimo di giocatori e la cifra da scommettere.
-- Partecipazione a una partita esistente facendo una join accettando o meno la cifra da scommettere.
-- Visualizzazione dello stato del gioco in tempo reale.
+- Creazione di una nuova partita scegliendo il numero massimo di giocatori (oltre al creatore) e la cifra da scommettere.
+- Partecipazione a una partita random.
+- Partecipazione a una partita di cui si conosce l'ID.
 
 
-Appena entrati nella nostra Dapp raggiungeremo la schermata principale (Figura 1) dalla quale potremo fare principalmente due cose:
-
-- creare una nuova partita.
-- unirci ad una partita casuale o specifica.
+In Figura 1 possiamo visualizzare la schermata principale della dApp sviluppata.
 
 ![Home page](./immagini/homepage.png){ width=50% }
 
@@ -66,16 +115,18 @@ Appena entrati nella nostra Dapp raggiungeremo la schermata principale (Figura 1
 ### Creazione partita
 
 
-Per creare la stanza (Figura 2) è necessario inserire il numero massimo di giocatori e l'importo della scommessa per partecipare. Questi due valori abbiamo deciso debbano essere (per semplicità) interi. Una volta inseriti i dati, il pulsante `Scommetti` si abiliterà e, premendolo, verrà chiamata la funzione del contratto `createGame` di cui parleremo nel prossimo capitolo.
+Per creare la stanza (Figura 2) è necessario inserire il numero massimo di giocatori e l'importo della scommessa per partecipare. Per semplicità di interazione col contratto è stato deciso che non è possibile scommettere frazioni di Ethereum. Una volta inseriti i dati, il pulsante `Scommetti` si abiliterà e, premendolo, verrà chiamata la funzione del contratto `createGame` di cui parleremo nel prossimo capitolo.
 
 ![Creazione della stanza di gioco](./immagini/creazionegame.png){ width=50% }
 
 
-Solo dopo aver premuto il pulsante scommetti ci verra mostrata la schermata di attesa (Figura 3), in cui attenderemo di aver raggiunto il numero totale di utenti che abbiamo scelto precedentemente.
+Solo dopo aver premuto il pulsante scommetti verrà mostrata la schermata di attesa (Figura 3), in cui si aspetterà di raggiungere il numero totale di giocatori scelto al momento della creazione della stanza.
 
 ![Attesa dell'unione di altri player](./immagini/attesaCreator.png){ width=50% }
 
 **Nota Bene:** il numero di giocatori specificato NON comprende il creatore del gioco, quindi se si specificherà un numero $n$ di giocatori, la partita si svolgerà fra $n+1$ giocatori.
+
+\pagebreak
 
 ### Entrare in una stanza
 
@@ -85,56 +136,57 @@ Per accedere a una stanza abbiamo due opzioni:
 - scegliere una stanza specifica, sapendo l'ID della stanza
 
 
-Se cliccato il pulsante `Entra in una stanza` ci si aprira una schermata (Figura 4) in cui dobbiamo obbligatoriamente inserire un ID per selezionare il gioco a vogliamo partecipare.
+Cliccando il pulsante `Entra in una stanza` si aprirà una schermata (Figura 4) in cui verrà richiesto inserire un ID per selezionare il gioco a vogliamo partecipare.
+
+![Scelta della stanza di gioco](./immagini/selezionacamera.png){ width=50% }
 
 
-![Pagina di raccolta informazioni sui game](./immagini/selezionacamera.png){ width=50% }
-
-
-
-Se l'ID selezionato risulta essere corretto e ci sono ancora posti disponibili allora apparirà la schermata contenente (Figura 5):
+Se l'ID selezionato esiste e ci sono ancora posti disponibili allora apparirà la schermata contenente:
 
 - ID della stanza scelta
-- Gli Eth da scommettere per poter unirsi alla camera
-- Il numero di posti disponibili
+- Gli Ethereum da scommettere per potersi unire alla stanza
+- Il numero di posti ancora disponibili
 
-![Pagina di scelta per la camera](./immagini/Fetchinfo.png){ width=50% }
+![Informazioni sulla partita](./immagini/Fetchinfo.png){ width=50% }
 
 
-A questo punto se viene cliccato il pulsante `Entra nella stanza` L'ETH scommesso verra prelevato e il numero dei giocatori verra aggiornato attraverso la chiamata di funzione del contratto `JoinGame` di cui parleremo nel prossimo capitolo.
+A questo punto, se cliccando sul pulsante `Entra nella stanza`, la somma di Ethereum scommessi verrà prelevata dal wallet e il numero dei giocatori presenti nella stanza verrà aggiornato attraverso la chiamata di funzione del contratto `JoinGame` di cui parleremo nel prossimo capitolo.
 
-Cliccando invece sul pulsante `Entra in una stanza random`, si andranno a richiedere le informazioni su un gioco scelto casualmente dal contratto, al quale potremo poi decidere se accedere o meno (Figura 5).
+Cliccando invece sul pulsante `Entra in una stanza random`, non verrà richiesto nessun ID e verranno visualizzate direttamente le informazioni sul gioco scelto casualmente dal contratto (Figura 5).
 
 ### Fase di gioco
 
-Una volta che tutti i giocatori sono entrati si avvia la partita e verrà caricata la cartella creata dal client al momento dell'ingresso nella stanza (parleremo meglio di questo argomento nel capitolo sulla sicurezza).
+Una volta che tutti i giocatori sono entrati la partita verrà avviata e verrà caricata la cartella creata dal client al momento dell'ingresso nella stanza (parleremo meglio di questo argomento nel capitolo sulla sicurezza).
 
 #### Lato Creatore della stanza
 
 
-Come detto in precedenza solo il creatore delle stanze si prende carico della responsabilita di chiedere l'estrazione dei numeri al contratto e come tale è in una posizione di comando rispetto agli altri joiners. Vediamo la schermata di gioco (Figura 6):
+Per rendere il gioco più interattivo, è il creatore della stanza che si fa carico della responsabilità estrarre i numeri, chiamando la funzione del contratto `extractNumber`, pertanto è sempre il creatore che detta il ritmo del gioco. Vediamo la schermata di gioco (Figura 6):
 
 ![Schermata di gioco del creatore](./immagini/TabellaCreator.png){ width=50% }
 
 Come si vede dall'immagine (Figura 6) abbiamo:
 
-- La lista dei valori estratti da 1 a 75.
-- la tabella contenente i numeri scelti casualmente lato client. Abbiamo rimosso la possibilità di scelta dei numeri per evitare possibili problemi di imbrogli dai giocatori. Sarà cura dei giocatori selezionare la casella corretta, come nel vero gioco.
+- La lista degli ultimi 5 numeri estratti.
+- La cartella generata randomicamente lato client. Mano a mano che verranno estratti i numeri, sarà cura dei giocatori tenere traccia delle caselle uscite, come nel vero gioco.
 - Un pulsante per estrarre i numeri, chiamando la funzione `extractNumber` del contratto.
-- Un pulsante per inviare la propria combinazione vincente al contratto quando si ha fatto bingo. Il pulsante si abilita solo se effettivamente sono state selezionate le casella appartenenti a una combinazione vincente. Questa scelta lato client è stata presa per evitare lo spam di richieste al contratto.
+- Un pulsante per inviare la propria combinazione vincente al contratto quando si ha una combinazione vincente. Per evitare lo spam di richieste di validazione della cartella da parte del contratto, il pulsante si abilita solo se si seleziona effettivamente una combinazione vincente
+
+\pagebreak
 
 #### Lato Joiner della stanza
 
 
-Dato che solo il creatore del gioco può estrarre i numeri, abbiamo dato ai joiner della stanza la possibilità di denunciarlo se cerca di bloccare il gioco per far allontanare i giocatori. Per questo motivo, è stato aggiunto un pulsante `Accusa`. Se premuto, questo pulsante rimuove il creatore dalla partita dopo un certo numero di secondi, terminando il gioco.
+Dato che solo il creatore del gioco può estrarre i numeri, abbiamo dato ai joiner della stanza la possibilità di denunciarlo se cerca di bloccare il gioco per far allontanare i giocatori. Per questo motivo, è stato aggiunto un pulsante `Accusa` che se premuto rimuove il creatore dalla partita dopo un certo numero di secondi, terminando il gioco. A questo punto i giocatori si spartiranno la quota di ingresso del creatore, oltre ovviamente a ricevere il rimborso della propria quota di partecipazione.
 
 ![Schermata di gioco per i joiner](./immagini/TabellaJoiner.png){ width=50% }
 
 
-Altre possibili implementazioni avrebbero potuto includere una logica che trasformava chi denunciava nel nuovo creatore. Tuttavia, abbiamo optato per una soluzione più semplice. Se la denuncia viene confermata, il creatore dovrà estrarre un numero entro un certo limite di tempo. Se lo fa, il gioco prosegue normalmente; altrimenti, tutti i giocatori riceveranno indietro il proprio denaro, insieme alla puntata del creatore, che verrà divisa per tutti i giocatori.
-
+Altre possibili implementazioni avrebbero potuto includere una logica che trasformava chi denunciava nel nuovo creatore. Tuttavia, abbiamo optato per una soluzione più semplice, che prevede l'annullamento dell'accusa se il creatore estrae un nuovo numero, facendo riprendere il gioco.
 
 ![Schermata di denuncia per i joiner](./immagini/DenunciaJoiner.png){ width=50% }
+
+\pagebreak
 
 ## Lato smart contract
 
@@ -145,7 +197,7 @@ Lo smart contract è scritto in Solidity e gestisce la logica del gioco, inclusa
 - Verifica delle vincite.
 - Distribuzione dei premi.
 
-Sotto vediamo i codici per queste funzionalita:
+\pagebreak
 
 ### Funzione `createGame`
 
@@ -236,6 +288,8 @@ function extractNumber(int256 _gameId, bool accused) public {
     }
 }
 ```
+
+\pagebreak
 
 # Principali decisioni
 
@@ -420,57 +474,7 @@ Se si deve verificare un elemento con indice minore o uguale a $15$, ad esempio 
 Se si deve verificare un elemento con indice maggiore di$15$, ad esempio $20$, la sua merkle proof sarà: $$[element, 20, H_{0,21}, H_{1,11}, H_{2,3}, H_{3,2}, H_{4,0} ]$$
 ![Merkle Proof dell'indice 20 - In verde gli hash forniti dalla proof, in viola quelli calcolati](./immagini/MerkleProof20.png)
 
-# Manuale utente
 
-## Utilizzo dell'istanza pubblica
-
-Per rendere più fruibile l'utilizzo dell'applicazione sviluppata, è stato eseguito il deploy di **BingoEth** su un server privato insieme a un'istanza di Ganache, così da non dover configurare nulla se non la rete su Metamask. È possibile accedere al progetto all'url [https://bingoeth.alteregofiere.com/](https://bingoeth.alteregofiere.com/).
-
-Gli account disponibili con le relative chiavi private sono:
-
-```
-Available Accounts
-==================
-(0) 0xC2F709C582CDe40CA38b108Fb0e639c14e108A8a (10000 ETH)
-(1) 0x35301246031343A7d13507b19aa6d4fE40F6587c (10000 ETH)
-(2) 0x97f4Ec285360456cb008B71B22cF1eFDd094e766 (10000 ETH)
-(3) 0x0fac963Ae1E20De87294A627938da0f04d9eb78E (10000 ETH)
-(4) 0x2b614F260BDD54FF6180543C9125A0e69679d04a (10000 ETH)
-(5) 0x9307C2e5EB3e6935D6F35bFa13288BFc36aDd846 (10000 ETH)
-(6) 0x7670F41114B30a6f06FD629707b193eCe545a59A (10000 ETH)
-(7) 0x1923D74eAC7Fde59A9b08bAc5970350644cC2a90 (10000 ETH)
-(8) 0xc0748B93286b8DC2D6C2736725413De61da4Bf56 (10000 ETH)
-(9) 0xe50a5343693edd7F9c52ec66ff7358b5f18300B1 (10000 ETH)
-
-Private Keys
-==================
-(0) 0x99409bd109959b84aae9234ce755a39a6df4c009a53c6a81ea0713d65bd80eb7
-(1) 0x98d1ccd915ef23a2a088dfec9a47960f7de3b71d5f3c2aff53b7cb85e411adc5
-(2) 0xe41c4f1aad19f7238246df7712f748c5cf4d6ac1c8a78e1b3aafb4a74e6ae39d
-(3) 0x42941bc9871700dade0f40b607a8e0528fd9578dbefcf4abe6b4f4b2eea817b0
-(4) 0x7a956b721714c8708ff22b25b193dae7efc7eaec77fe5b40c5c2944fc42feebe
-(5) 0x9d19b8c0ad94ac66122485684d44bfa782dd84def2c2382b991f3632f3b9a294
-(6) 0x8b93665547a073f7055c043ce4e6115a13e0900d18e23d206c9b0b17f8bf27e8
-(7) 0x93c2d0ce2d1398fd5585c348a7befd000fecfebd0c9d5005550e820317ab0a47
-(8) 0xd994441bc950b1d80191c8a0454a7b186a3562a8cf486390d4f740a713384d81
-(9) 0x9f6e155cd2faf86bb96331732d9f5c6727fe0858773d7ad141f67425e7b1fe1b
-```
-
-
-## Esecuzione da sorgente
-
-> *Nota: per l'utilizzo del progetto è consigliato avere docker (consultare [https://docs.docker.com/get-docker/](https://docs.docker.com/get-docker/)) installato sul proprio pc.*
-
-Steps:
-
-1. Clonare il repository da [https://github.com/leomanne/P2P_Project](https://github.com/leomanne/P2P_Project) o da [https://github.com/skiby7/BingoEth](https://github.com/skiby7/BingoEth) (il secondo repository è il mirror del primo) o scompattare l'archivio BingoEth.zip
-2. Aprire il terminale/powershell e spostarsi dentro la directory del progetto
-3. Eseguire il comando `docker compose up`
-
-Eseguiti i passi indicati, inizierà il processo di build del container docker. Dopodiché si avvierà il container che compilerà il contratto, per poi avviare l'applicazione **BingoEth**.
-Una volta terminato il processo di build, sarà possibile accedere all'applicazione tramite browser all'url [http://localhost:80](http://localhost:80).
-
-Gli account verranno configurati su un'istanza di ganache locale all'indirizzo (`http://127.0.0.1:7545`).
 
 # Valutazione del consumo di gas
 
