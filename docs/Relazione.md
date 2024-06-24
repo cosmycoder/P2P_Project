@@ -201,7 +201,7 @@ Lo smart contract è scritto in Solidity e gestisce la logica del gioco, inclusa
 
 ### Funzione `createGame`
 
-La funzione `createGame` viene chiamata per avviare una nuova partita. Verifica i parametri di input come il numero massimo di giocatori consentiti e l'ammontare della scommessa. Successivamente, genera un ID univoco per la partita e inizializza un nuovo oggetto di gioco nella lista. Vengono impostati vari parametri, tra cui il creatore della partita, l'ammontare della scommessa, il merkle root delle carte del creatore, eccetera. Infine, aggiunge la partita alla lista dei giochi disponibili e emette un evento per segnalare la creazione della partita.
+La creazione di nuove partite è demandata alla funzione `createGame`, che verifica i parametri di input come il numero massimo di giocatori consentiti, l'ammontare della scommessa e l'ammontare di Ethereum inviati al contratto. Successivamente, genera un ID univoco per la partita e inizializza un nuovo oggetto di gioco nella lista dei giochi disponibili, per poi emettere l'evento `GameCreated`.
 
 ```java
 function createGame(uint _maxJoiners, uint _betAmount, bytes32 _cardMerkleRoot)
@@ -251,7 +251,7 @@ public payable {
 
 ### Funzione `extractNumber`
 
-La funzione `extractNumber` gestisce l'estrazione dei numeri nel gioco utilizzando una funzione per generare numeri casuali, facendo un check per evitare di estrarre numeri duplicati. Aggiunge quindi il numero estratto alla lista dei numeri estratti per il gioco corrispondente. Se specificato, resetta l'accusa e l'accusatore nel gioco. Infine, emette eventi per informare sul numero estratto o segnalare la fine del gioco se tutti i numeri sono stati estratti.
+La funzione `extractNumber` gestisce l'estrazione dei numeri, appoggiandosi alla funzione `getNewNumber`, che si occupa di generare un numero casuale fra $1$ e $75$ eseguendo un check sui numeri già estratti, in modo da evitare duplicati. Aggiunge quindi il numero estratto al campo `numbersExtracted` delle `Info` (vedere il [prossimo capitolo](#struttura-dati)) del gioco identificato da `_gameId`. Se il flag `accused` è `true`, revoca l'accusa al creatore di quel gioco, mentre se tutti i numeri sono stati e nessuno ha chiamato bingo, automaticamente verrà fatto vincere il creatore.
 
 ```java
 function extractNumber(int256 _gameId, bool accused) public {
@@ -293,57 +293,60 @@ function extractNumber(int256 _gameId, bool accused) public {
 
 # Principali decisioni
 
-## Struttura dati
+## Strutture dati utilizzate nel contratto
 
-Per salvare tutte le informazioni sui dati riguardanti un game abbiamo scelto di optare per una struct, sotto il codice:
+Per salvare le informazioni riguardanti i giochi creati lato contratto, abbiamo utilizzato una struct chiamata `Info` dove salvare:
+
+- `creator` e `joiners`: gli indirizzi del creatore e dei giocatori così da poter gestire i pagamenti
+- `maxJoiners`: il numero massimo di giocatori che possono accedere alla partite
+- `totalJoiners`: il numero di giocatori che sono entrati fino a quel momento
+- `ethBalance`: il numero di Ethereum raccolti fino a quel momento
+- `betAmount`: la quota per accedere alla partita
+- `creatorMerkleRoot`: il merkle root del creatore
+- `joinerMerkleRoots`: tutti i merkle root dei giocatori, salvato come mapping per poter essere gestito più semplicemente in seguito
+- `numbersExtracted`: la lista dei numeri estratti
+- `weiUsed`: il gas utilizzato dal creatore per l'estrazione dei numeri
+- `accusationTime`: il timestamp del blocco in cui è stato accusato il creatore
+- `accuser`: l'indirizzo dell'accusatore
 
 ```java
 struct Info {
-        address creator;
-        address[] joiners;
-        uint maxJoiners;
-        uint totalJoiners;
-        uint ethBalance;
-        uint betAmount;
-        bytes32 creatorMerkleRoot;
-        mapping(address => bytes32) joinerMerkleRoots;
-        uint8[] numbersExtracted;
-        uint accusationTime;
-        address accuser;
-    }
+    address creator;
+    address[] joiners;
+    uint maxJoiners;
+    uint totalJoiners;
+    uint ethBalance;
+    uint betAmount;
+    bytes32 creatorMerkleRoot;
+    mapping(address => bytes32) joinerMerkleRoots; // Updated to a mapping
+    uint8[] numbersExtracted;
+    uint weiUsed;
+    uint accusationTime;
+    address accuser;
+}
 ```
-
-Come possiamo vedere, viene salvato l'address del creatore del game e di tutti i joiners, oltre che alle ovvie informazioni sul game come il tetto massimo di giocatori e il valore da scommettere in ethereum. Ci salviamo inoltre anche il MerkleRoot del creatore e di tutti i joiners attraverso un mapping.
-Le ultime variabili sono utilizzate rispettivamente per il controllo sui numeri estratti e sull'accusa dei giocatori per il creatore del game che ha la responsabilità di estrarre i numeri del bingo.
 
 ## Vincoli e regole di **BingoEth**
 
 I seguenti vincoli sono stati implementati per garantire il corretto funzionamento del gioco:
 
 - **Numero delle caselle**: Il numero delle caselle è stato settato seguendo le regole base del bingo americano e quindi a 25 caselle totali.
-- **La casella centrale**: La casella centrale è una casella jolly e quindi valida di base.
+- **La casella centrale**: La casella centrale è una casella jolly e quindi sempre valida.
 - **Il creatore**: Il creatore si assume il ruolo di chiedere al contratto di estrarre i numeri.
-- **Limite scommesse**:  I giocatori non possono scommettere piu di 1000 ETH.
+- **I giocatori**: Controllano che il creatore non vada in stallo.
+- **Limite scommesse**:  Non si può scommettere più di 1000 ETH.
 - **Numero di cartelle**: Per semplicità un giocatore può comprare una sola cartella alla volta.
 
 ## Uso di Merkle Tree
 
-Abbiamo deciso di utilizzare un Merkle Tree per garantire l'integrità dei dati dei giocatori senza rivelare le informazioni sensibili durante la verifica delle vincite. Questo approccio consente una verifica efficiente e sicura delle cartelle di bingo.
-
+Per gestire la verifica delle cartelle di bingo senza dover salvare l'array di 24 numeri è stato scelto di utilizzare un Merkle Tree in modo da poter validare solo un eventuale combinazione vincente.
 
 ### Generazione del Merkle Tree
 
-Il codice per la generazione del Merkle Tree si trova all'interno del file `client/src/services/TableService.js` ed è implementato nella funzione `generateMerkleTree`.
-
-**Funzionalità:**
-- La funzione prende in input una tabella (`table`), rappresentata come un array.
-- Ogni elemento della tabella viene convertito in un hash utilizzando `utils.soliditySha3` della liberia `web3`.
-- Gli hash risultanti costituiscono il livello delle foglie (`leaves`) del Merkle Tree.
-- Viene quindi calcolato il Merkle Tree iterativamente, concatenando e hashando le coppie di nodi fino a raggiungere la radice del Merkle Tree.
+Il codice per la generazione del Merkle Tree si trova all'interno del file `client/src/services/TableService.js` ed è implementato nella funzione `generateMerkleTree`. La funzione prende quindi in input un'array (il parametro `table`) e tramite la funzione `utils.soliditySha3` (l'equivalente di `keccak256` in Solidity) della liberia `web3` genera gli hash di tutti gli elementi della cartella. Successivamente, genera tutti i livelli del Merkle Tree in maniera iterativa.
 
 ```javascript
 export function generateMerkleTree(table) {
-    console.log(table);
     let merkleTree = [];
 
     let tmp = [];
@@ -478,14 +481,6 @@ Se si deve verificare un elemento con indice maggiore di$15$, ad esempio $20$, l
 
 # Valutazione del consumo di gas
 
-<!-- - Il deploy del progetto si consuma una quantita di gas pari a 3653200 Gas
-- La funzione CreateGame si consuma 179890 Gas
-- La funzione JoinGame consuma 131088 Gas
-- La sola funzione accuse consuma 67810 Gas
-- La sola funzione di CheckAccuse consuma ~ 1300+(2500×n) Gas dove n = numero di joiners
-- L'estrazione di un numero ~ 70705 Gas * un massimo di 75 numeri = massimo 5302875 Gas
-- L'estrazione delle informazioni su un game ~ 36536 Gas
-- Stima per la sottomissione di una board con SubmitBoard ~ 40181 Gas -->
 
 |      Funzione      |   Gas Consumato  |                               Note                               |
 |:------------------:|:----------------:|:----------------------------------------------------------------:|
@@ -493,155 +488,129 @@ Se si deve verificare un elemento con indice maggiore di$15$, ad esempio $20$, l
 |    `createGame`    |      179890      |                                                                  |
 |     `joinGame`     |      131088      |                                                                  |
 |      `accuse`      |       67810      |                                                                  |
-|    `checkAccuse`   |  $1300+(2500\times n)$ |                  Dove $n$ è il numero di joiners                 |
+|    `checkAccuse`   |  $1300+(2500\times n)$ |                  Dove $n$ è il numero di joiners           |
 |   `extractNumber`  | $70705 \times m$ | $m$ è il numero di tentativi (massimo 75, quindi 5302875 Gas)    |
 |    `getInfoGame`   |       36536      |                                                                  |
 |    `submitBoard`   |       40181      |                                                                  |
 
-## Valutazione di esempio con un gioco con un creatore e 3 joiners
+## Valutazione di esempio con un gioco con un creatore e 3 giocatori
 
-Ipotiziamo che ci siano stati 37 numeri per aver raggiunto il termine del gioco e che ci siano state 6 accuse (ovviamente non andate a buon fine). Calcoliamo il costo complessivo:
+Ipotizziamo che in una partita siano stati estratti 37 numeri e che il creatore sia stato accusato 6 volte (senza mai concludere il gioco per stallo). Calcoliamo il costo complessivo:
 
-Per calcolare il costo complessivo del consumo di gas considerando le operazioni specificate, ipotizziamo i seguenti dati:
+|      Joiners     |   Numeri estratti  |             Accuse             |
+|:----------------:|:------------------:|:------------------------------:|
+|        3         |         37         |                 6              |
 
-- **Creatore del gioco**: 1
-- **Joiners**: 3
-- **Numeri estratti**: 37
-- **Accuse**: 6
 
-### Calcolo del consumo di gas:
+Vediamo ora il calcolo del consumo di gas:
 
-1. **Deploy del progetto**: 3653200 gas
+|      Operazione      |   Gas Consumato  |                               Note                               |
+|:------------------------:|:-----------------:|:----------------------------------------------------------------:|
+|  Deploy contratto  |      3.653.200     |                                                                  |
+|    Creazione del gioco    |      179.890      |                                                                  |
+|     Richiesta informazioni sul gioco     |     36.536       |     |
+|     Entrata in partita     |     393.264       |  Calcolato come $131088\times joiners = 131088\times 3$                                                                |
+|      Accuse      |       406.860      |   Calcolato come $67810\times nAccuse = 67810\times 6$                                                                |
+|    Chiamata `checkAccuse`   |  52.800 |                  Calcolato come $(1300 + (2500 \times joiners))\times nAccuse = (1300 + (2500 \times 3)) \times 6$           |
+|   Estrazione dei numeri  | 2.616.085 | Calcolato come $70705 \times nEstrazioni = 70705 \times 37$    |
+|    Invio della cartella   |       40.181      |   |
+||||
+|    **Totale**   |       7.378.816      |   |
 
-2. **Creazione di un gioco**:
-   - 179890 gas
 
-3. **JoinGame** per 3 joiners:
-   - 131088 * 3 = 393264 gas
-
-4. **Accuse** per 6 accuse:
-   - 67810 * 6 = 406860 gas
-
-5. **CheckAccuse** per 6 accuse e 3 joiners:
-   - Ogni chiamata a `CheckAccuse` con 3 joiners:
-     - 1300 + (2500 * 3) = 1300 + 7500 = 8800 gas
-   - 8800 * 6 = 52800 gas
-
-6. **Estrazione di numeri**:
-   - Numero massimo di estrazioni: 37
-   - 70705 * 37 = 2616085 gas
-
-7. **Estrazione delle informazioni su un gioco**:
-   - 36536 gas (assumiamo 1 chiamata)
-
-8. **Sottomissione della board con SubmitBoard**:
-   - 40181 gas (al caso pessimo)
-
-### Totale del consumo di gas:
-
-Gas totale = 3653200 + 179890 + 393264 + 406860 + 52800 + 2616085 + 36536 + 40181
-
-### Calcolo:
-
-Gas totale = 7949016 + 52800 + 2616085 + 36536 + 40181
-Gas totale = 7949016 + 2716902 + 40181
-Gas totale = 10656099 + 40181
-Gas totale = 10696280 gas
-
-Quindi, il costo complessivo del consumo di gas per le operazioni descritte, considerando un creatore del gioco e 3 joiners, con 37 numeri estratti e 6 accuse, è di circa 10,696,280 gas.
+Quindi, il costo complessivo del consumo di gas per le operazioni descritte, considerando un creatore del gioco e 3 joiners, con 37 numeri estratti e 6 accuse, è di circa $7.378.816$ gas.
 
 Per calcolare quanto spende un joiner e quanto spende il creatore del gioco in base al consumo di gas specificato, consideriamo che i joiner possono eseguire tutte le operazioni elencate:
 
-**Dati forniti:**
-- Creatore del gioco: 1
-- Joiners: 3
-- Numeri estratti: 37
-- Accuse: 6
 
-**Consumo totale di gas:** 10,696,280 gas
 
-### Calcolo del consumo di gas per ciascun partecipante:
+### Calcolo del consumo di gas per ciascun partecipante
 
-#### Creatore del gioco:
-1. **Deploy del progetto**: 3,653,200 gas
-2. **Creazione di un gioco**: 179,890 gas
-3. **JoinGame** per 3 joiners: 393,264 gas (si presume che il creatore del gioco non esegua JoinGame, quindi consideriamo solo il costo iniziale per la creazione)
-4. **Accuse**: 406,860 gas
-5. **CheckAccuse**: 52,800 gas (calcolato come 8800 gas per chiamata * 6 accuse)
-6. **Estrazione di numeri**: 2,616,085 gas (37 estrazioni)
-7. **Estrazione delle informazioni su un gioco**: 36,536 gas (1 chiamata)
-8. **Sottomissione della board con SubmitBoard**: 40,181 gas (al caso pessimo)
+>  **Nota:** *nel calcolo non è considerato il deploy del contratto.*
 
-**Totale per il creatore**:
-\[
-3653200 + 179890 + 393264 + 406860 + 52800 + 2616085 + 36536 + 40181 = 6763376 \text{ gas}
-\]
+#### Creatore del gioco
+|      Operazione      |   Gas Consumato  |                               Note                               |
+|:------------------------------:|:-----------------:|:----------------------------------------------------------------:|
+|    Creazione del gioco    |      179.890      |                                                                  |
+|    Chiamata `checkAccuse`   |  52.800 |                  Calcolato come $(1300 + (2500 \times joiners))\times nAccuse = (1300 + (2500 \times 3)) \times 6$           |
+|   Estrazione dei numeri  | 2.616.085 | Calcolato come $70705 \times nEstrazioni = 70705 \times 37$    |
+|    Invio della cartella   |       40.181      |   |
+||||
+|    **Totale**   |       2.888.956      |   |
 
-#### Joiner:
-1. **JoinGame**: 131,088 gas (per ciascuno dei 3 joiners)
-2. **Accuse**: 67,810 gas (per ciascuna delle 6 accuse)
-3. **CheckAccuse**: 52,800 gas (stesso costo totale del creatore, poiché coinvolto solo come partecipante)
-4. **Estrazione delle informazioni su un gioco**: 36,536 gas (1 chiamata)
-5. **Sottomissione della board con SubmitBoard**: 40,181 gas (al caso pessimo)
 
-**Totale per un joiner**:
-\[
-131088 + 67810 + 52800 + 36536 + 40181 = 329815 \text{ gas}
-\]
+#### Giocatori
+|      Operazione      |   Gas Consumato  |                               Note                               |
+|:------------------------------:|:-----------------:|:----------------------------------------------------------------:|
+|     Richiesta informazioni sul gioco     |     36.536       |     |
+|     Entrata in partita     |     393.264       |  Calcolato come $131088\times joiners = 131088\times 3$                                                                |
+|      Accuse      | 135.620    |   Ipotizziamo 2 accuse a giocatore                              |
+|    Invio della cartella   |       40.181      |   |
+||||
+|    **Totale**   |       605.601     |   |
 
-### Conclusione:
+#### Conclusioni
+Come possiamo vedere il creatore deve sostenere un costo importante dovuto all'estrazione dei numeri, pertanto abbiamo deciso di tenere traccia del gas utilizzato per questa specifica operazione così da poter rimborsare il creatore a fine partita.
+Di seguito uno snippet di codice estratto dalla funzione del contratto `submitBoard`:
 
-- **Creatore del gioco**: Spenderebbe circa **6,763,376 gas** per tutte le operazioni descritte.
-- **Joiner**: Ogni joiner spenderebbe circa **329,815 gas** per le operazioni di JoinGame, Accuse, Estrazione delle informazioni su un gioco e Sottomissione della board con SubmitBoard.
+```java
+...
+if (msg.sender != gameList[_gameId].creator) {
+    uint gameWeiAmount = gameList[_gameId].ethBalance * 1 ether;
+    uint prize = gameWeiAmount - gameList[_gameId].weiUsed;
+
+    emit GameEnded(_gameId, msg.sender, prize, gameList[_gameId].weiUsed, false, WinningReasons.BINGO);
+    payable(msg.sender).transfer(prize);
+    payable(gameList[_gameId].creator).transfer(gameList[_gameId].weiUsed);
+} else {
+    emit GameEnded(_gameId, msg.sender, gameList[_gameId].ethBalance * 1 ether, 0, true, WinningReasons.BINGO);
+    payable(msg.sender).transfer(gameList[_gameId].ethBalance * 1 ether);
+}
+...
+```
 
 
 # Potenziali vulnerabilità
 
 La funzione utilizzata per generare numeri casuali in uno smart contract utilizza l'hashing di dati come il timestamp del blocco, la difficoltà del blocco, l'indirizzo del mittente e un seed fornito. Tuttavia, la sicurezza di questa implementazione merita attenzione. L'hashing di parametri come il timestamp e la difficoltà del blocco non è completamente imprevedibile e potrebbe essere influenzato da attacchi che manipolano questi valori, compromettendo la casualità dei numeri generati. Inoltre, la funzione itera per trovare un numero non ancora estratto, il che può aumentare il consumo di gas e causare ritardi se il numero di tentativi è elevato.
 
-## Generazione di numeri casuali
+Di seguito la funzione `extractNumber` e `getNewNumber`:
 
 ```java
+function getNewNumber(int256 seed) internal view returns(uint8) {
+    uint256 randomHash = uint256(keccak256(abi.encodePacked
+        (block.timestamp, block.difficulty, msg.sender, seed)));
+    uint256 randomNumber = (randomHash % 75) + 1;
+    return uint8(randomNumber);
+}
+
 function extractNumber(int256 _gameId, bool accused) public {
-        uint startGas = gasleft();
-        require(gameList[_gameId].numbersExtracted.length <= 75,
-            "All numbers have been extracted!");
-        uint8 newNumber = getNewNumber(_gameId);
-        int8 i = 1;
-        while (isExtracted(gameList[_gameId].numbersExtracted, newNumber)) {
-            newNumber = getNewNumber(_gameId+i);
-            i++;
-        }
-        gameList[_gameId].numbersExtracted.push(newNumber);
-        if(accused){
-            gameList[_gameId].accusationTime = 0;
-            gameList[_gameId].accuser = address(0);
-            emit ConfirmRemovedAccuse(_gameId);
-
-        }
-        if(gameList[_gameId].numbersExtracted.length < 75){
-            emit NumberExtracted(_gameId, newNumber,false);
-        }else{
-            emit GameEnded(_gameId, msg.sender,
-                gameList[_gameId].ethBalance * 1 ether, 0, true, WinningReasons.BINGO);
-            payable(msg.sender).transfer(gameList[_gameId].ethBalance * 1 ether);
-        }
-        gameList[_gameId].weiUsed += (startGas - gasleft()) * tx.gasprice;
+    uint startGas = gasleft();
+    require(gameList[_gameId].numbersExtracted.length <= 75,
+        "All numbers have been extracted!");
+    uint8 newNumber = getNewNumber(_gameId);
+    int8 i = 1;
+    while (isExtracted(gameList[_gameId].numbersExtracted, newNumber)) {
+        newNumber = getNewNumber(_gameId+i);
+        i++;
     }
+    gameList[_gameId].numbersExtracted.push(newNumber);
+    if(accused){
+        gameList[_gameId].accusationTime = 0;
+        gameList[_gameId].accuser = address(0);
+        emit ConfirmRemovedAccuse(_gameId);
 
-
-    function getNewNumber(int256 seed) internal view returns(uint8) {
-        uint256 randomHash = uint256(keccak256(abi.encodePacked
-            (block.timestamp, block.difficulty, msg.sender, seed)));
-        uint256 randomNumber = (randomHash % 75) + 1;
-        return uint8(randomNumber);
     }
+    if(gameList[_gameId].numbersExtracted.length < 75){
+        emit NumberExtracted(_gameId, newNumber,false);
+    }else{
+        emit GameEnded(_gameId, msg.sender,
+            gameList[_gameId].ethBalance * 1 ether, 0, true, WinningReasons.BINGO);
+        payable(msg.sender).transfer(gameList[_gameId].ethBalance * 1 ether);
+    }
+    gameList[_gameId].weiUsed += (startGas - gasleft()) * tx.gasprice;
+}
 
 ```
-La funzione `extractNumber` gestisce l'estrazione di numeri casuali per un gioco all'interno di un contratto intelligente. Inizia registrando il gas disponibile all'inizio dell'esecuzione. Verifica se il numero di numeri estratti per il gioco specificato è inferiore o uguale a 75. Se tutti i numeri sono stati estratti, interrompe l'esecuzione con un errore. Genera un nuovo numero casuale utilizzando la funzione `getNewNumber`. Verifica l'unicità del numero attraverso un ciclo while, incrementando un contatore in caso di collisione e ottenendo un nuovo numero fino a trovare uno unico. Aggiunge il numero estratto all'array del gioco. Se l'argomento accused è vero, reimposta l'accusa nel gioco. Emette eventi per segnalare l'estrazione di un numero o la fine del gioco. Infine, calcola e aggiorna i costi di gas utilizzati durante l'esecuzione della funzione.
 
-
-
-
-
-
+È stato deciso di non non far inviare il `seed` dal creatore poiché poteva aumentare le possibilità che un creatore malevolo potesse manipolare l'estrazione dei numeri.
