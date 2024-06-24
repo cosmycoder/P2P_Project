@@ -14,7 +14,7 @@ contract Bingo {
         uint ethBalance;
         uint betAmount;
         bytes32 creatorMerkleRoot;
-        mapping(address => bytes32) joinerMerkleRoots; // Updated to a mapping
+        mapping(address => bytes32) joinerMerkleRoots;
         uint8[] numbersExtracted;
         uint weiUsed;
         uint accusationTime;
