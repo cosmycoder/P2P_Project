@@ -107,7 +107,7 @@ Il front-end dell'applicazione BingoEth è stato sviluppato in React e consente 
 - Partecipazione a una partita di cui si conosce l'ID.
 
 
-In Figura 1 possiamo visualizzare la schermata principale della dApp sviluppata.
+In Figura 2 possiamo visualizzare la schermata principale della dApp sviluppata.
 
 ![Home page](./immagini/homepage.png){ width=50% }
 
@@ -115,12 +115,12 @@ In Figura 1 possiamo visualizzare la schermata principale della dApp sviluppata.
 ### Creazione partita
 
 
-Per creare la stanza (Figura 2) è necessario inserire il numero massimo di giocatori e l'importo della scommessa per partecipare. Per semplicità di interazione col contratto è stato deciso che non è possibile scommettere frazioni di Ethereum. Una volta inseriti i dati, il pulsante `Scommetti` si abiliterà e, premendolo, verrà chiamata la funzione del contratto `createGame` di cui parleremo nel prossimo capitolo.
+Per creare la stanza (Figura 3) è necessario inserire il numero massimo di giocatori e la quota di ingresso. Per semplicità di interazione col contratto è stato deciso che non è possibile scommettere frazioni di Ethereum. Una volta inseriti i dati, il pulsante `Scommetti` si abiliterà e, premendolo, verrà chiamata la funzione del contratto `createGame` di cui parleremo nel prossimo capitolo.
 
 ![Creazione della stanza di gioco](./immagini/creazionegame.png){ width=50% }
 
 
-Solo dopo aver premuto il pulsante `Scommetti` verrà mostrata la schermata di attesa (Figura 3), in cui si aspetterà di raggiungere il numero totale di giocatori scelto al momento della creazione della stanza.
+Solo dopo aver premuto il pulsante `Scommetti` verrà mostrata la schermata di attesa (Figura 4), in cui si aspetterà di raggiungere il numero totale di giocatori scelto al momento della creazione della stanza.
 
 ![Attesa dell'unione di altri player](./immagini/attesaCreator.png){ width=50% }
 
@@ -136,7 +136,7 @@ Per accedere a una stanza abbiamo due opzioni:
 - scegliere una stanza specifica, conoscendo l'ID della stanza
 
 
-Cliccando il pulsante `Entra in una stanza` si aprirà una schermata (Figura 4) in cui verrà richiesto di inserire un ID per selezionare il gioco a vogliamo partecipare.
+Cliccando il pulsante `Entra in una stanza` si aprirà una schermata (Figura 5) in cui verrà richiesto di inserire un ID per selezionare il gioco a vogliamo partecipare.
 
 ![Scelta della stanza di gioco](./immagini/selezionacamera.png){ width=50% }
 
@@ -156,7 +156,7 @@ Cliccando invece sul pulsante `Entra in una stanza random`, non verrà richiesto
 
 ### Fase di gioco
 
-Una volta che tutti i giocatori sono entrati, la partita verrà avviata e verrà caricata la cartella creata dal client al momento dell'ingresso nella stanza (parleremo meglio di questo argomento nel capitolo sulla sicurezza).
+Una volta che tutti i giocatori sono entrati, la partita verrà avviata e verrà caricata la cartella creata dal client al momento dell'ingresso nella stanza.
 
 #### Lato Creatore della stanza
 
@@ -165,7 +165,7 @@ Per rendere il gioco più interattivo, è il creatore della stanza che si fa car
 
 ![Schermata di gioco del creatore](./immagini/TabellaCreator.png){ width=50% }
 
-Come si vede dall'immagine (Figura 6) abbiamo:
+Come si vede dall'immagine abbiamo:
 
 - La lista degli ultimi 5 numeri estratti.
 - La cartella generata randomicamente lato client. Mano a mano che verranno estratti i numeri, sarà cura dei giocatori tenere traccia delle caselle uscite, come nel vero gioco.
@@ -197,7 +197,6 @@ Lo smart contract è scritto in Solidity e gestisce la logica del gioco, inclusa
 - Verifica delle vincite.
 - Distribuzione dei premi.
 
-\pagebreak
 
 ### Funzione `createGame`
 
@@ -249,43 +248,90 @@ public payable {
 }
 ```
 
+### Funzione `joinGame`
+
+La funzione `joinGame` gestisce l'ingresso in partita di un giocatore e prende come input il `_gameId`, ricevuto durante la richiesta di informazioni su un gioco (Figura 5 e 6), e il Merkle Root della cartella generata dal client.
+Dopo aver verificato le condizioni di ingresso, si controlla che due giocatori non abbiano inviato lo stesso Merkle Root, per poi aggiornare la variabile `gameList` e quindi emettere l'evento `GameJoined`. Dopodiché se viene raggiunto il numero massimo di joiners, il gioco identificato dal `_gameId` viene rimosso dall'elenco dei giochi disponibili e viene emesso l'evento `GameStarted`.
+
+```java
+function joinGame(int256 _gameId, bytes32 _cardMerkleRoot) public payable {
+    require(_gameId > 0, "Game ID must be greater than 0!");
+    require(elencoGiochiDisponibili.length > 0, "No available games!");
+
+    //check if the game is available and if the player is not the creator
+    require(
+        gameList[_gameId].totalJoiners < gameList[_gameId].maxJoiners,
+        "Game already taken!");
+    require(
+        gameList[_gameId].creator != msg.sender,
+        "You can't join a game created by yourself!");
+    require(
+        gameList[_gameId].creatorMerkleRoot != _cardMerkleRoot,
+        "Invalid merkle root!");
+    require(
+        msg.sender.balance/1 ether >= gameList[_gameId].betAmount,
+        "Cannot bet more than you can afford!");
+    require(
+        msg.value/1 ether == gameList[_gameId].betAmount,
+        "Please send the correct bet amount!");
+
+    for (uint i = 0; i < gameList[_gameId].joiners.length; i++) {
+        require(
+            gameList[_gameId]
+                .joinerMerkleRoots[gameList[_gameId]
+                .joiners[i]] != _cardMerkleRoot, "Invalid merkle root!");
+    }
+    //add the player to the game
+    gameList[_gameId].joiners.push(msg.sender);
+    gameList[_gameId].totalJoiners++;
+    gameList[_gameId].ethBalance += gameList[_gameId].betAmount;
+    gameList[_gameId].joinerMerkleRoots[msg.sender] = _cardMerkleRoot;
+
+    emit GameJoined(
+        _gameId,
+        gameList[_gameId].creator,
+        msg.sender,
+        gameList[_gameId].maxJoiners,
+        gameList[_gameId].totalJoiners,
+        gameList[_gameId].ethBalance
+    );
+    if(gameList[_gameId].totalJoiners == gameList[_gameId].maxJoiners){
+        removeFromGiochiDisponibili(_gameId);
+        emit GameStarted(_gameId);
+    }
+}
+```
+
 ### Funzione `extractNumber`
 
 La funzione `extractNumber` gestisce l'estrazione dei numeri, appoggiandosi alla funzione `getNewNumber`, che si occupa di generare un numero casuale fra $1$ e $75$ eseguendo un check sui numeri già estratti, in modo da evitare duplicati. Aggiunge quindi il numero estratto al campo `numbersExtracted` delle `Info` (vedere il [prossimo capitolo](#struttura-dati)) del gioco identificato da `_gameId`. Se il flag `accused` è `true`, revoca l'accusa al creatore di quel gioco, mentre se tutti i numeri sono stati e nessuno ha chiamato bingo, automaticamente verrà fatto vincere il creatore.
 
 ```java
 function extractNumber(int256 _gameId, bool accused) public {
-    // Controlla se tutti i numeri sono stati estratti
+    uint startGas = gasleft();
     require(gameList[_gameId].numbersExtracted.length <= 75,
         "All numbers have been extracted!");
-
-    // Genera un nuovo numero per il gioco
     uint8 newNumber = getNewNumber(_gameId);
     int8 i = 1;
-
-    // Controlla se il numero è già stato estratto,
-        in tal caso genera un nuovo numero
     while (isExtracted(gameList[_gameId].numbersExtracted, newNumber)) {
         newNumber = getNewNumber(_gameId+i);
         i++;
     }
-
-    // Aggiunge il nuovo numero alla lista dei numeri estratti per il gioco
     gameList[_gameId].numbersExtracted.push(newNumber);
-
-    // Reset dell'accusa se il parametro accused è true
     if(accused){
         gameList[_gameId].accusationTime = 0;
         gameList[_gameId].accuser = address(0);
-    }
+        emit ConfirmRemovedAccuse(_gameId);
 
-    // Controlla se tutti i numeri sono stati estratti e emette eventi di conseguenza
-    if(gameList[_gameId].numbersExtracted.length < 75){
-        emit NumberExtracted(_gameId, newNumber, false);
-    }else{
-        emit GameEnded(_gameId, gameList[_gameId].creator,
-            gameList[_gameId].ethBalance, WinningReasons.BINGO);
     }
+    if(gameList[_gameId].numbersExtracted.length < 75){
+        emit NumberExtracted(_gameId, newNumber,false);
+    }else{
+        emit GameEnded(_gameId, msg.sender,
+            gameList[_gameId].ethBalance * 1 ether, 0, true, WinningReasons.BINGO);
+        payable(msg.sender).transfer(gameList[_gameId].ethBalance * 1 ether);
+    }
+    gameList[_gameId].weiUsed += (startGas - gasleft()) * tx.gasprice;
 }
 ```
 
@@ -318,7 +364,7 @@ struct Info {
     uint ethBalance;
     uint betAmount;
     bytes32 creatorMerkleRoot;
-    mapping(address => bytes32) joinerMerkleRoots; // Updated to a mapping
+    mapping(address => bytes32) joinerMerkleRoots;
     uint8[] numbersExtracted;
     uint weiUsed;
     uint accusationTime;
@@ -377,6 +423,8 @@ Una particolarità del calcolo del merkle tree in questo contesto è che il nume
 
 Come possiamo vedere dal diagramma, al livello $3$ l'elemento con indice $2$ viene duplicato per permettere il calcolo dell'elemento $(4,1)$.
 Questa soluzione è di semplice implementazione, infatti, durante il calcolo del merkle tree, è sufficiente controllare all'interno del ciclo for se si ha un elemento successivo a quello corrente con cui eseguire l'hash, altrimenti si esegue l'hash *"raddoppiando"* il nodo corrente:
+
+\pagebreak
 
 ```javascript
 for (let j = 0; j < tmp.length; j += 2) {
@@ -455,7 +503,6 @@ function verifyMerkleProof(
     uint256 _index
 ) internal pure returns (bool) {
     bytes32 _hash = keccak256(abi.encodePacked(_leaf));
-    // Starting from 2 to avoid resizing the proof array
     for (uint256 i = 2; i < _proof.length; i++) {
         if (_index % 2 == 0) {
             _hash = keccak256(abi.encodePacked(_hash, _proof[i]));
@@ -471,11 +518,14 @@ function verifyMerkleProof(
 #### Esempio 1
 Se si deve verificare un elemento con indice minore o uguale a $15$, ad esempio $7$, la sua merkle proof sarà: $$[element, 7, H_{0,6}, H_{1,2}, H_{2,0}, H_{3,1}, H_{4,1} ]$$
 
-![Merkle Proof dell'indice 7 - In verde gli hash forniti dalla proof, in viola quelli calcolati](./immagini/MerkleProof7.png)
+![Merkle Proof dell'indice 7 - In verde gli hash forniti dalla proof, in viola quelli calcolati](./immagini/MerkleProof7.png){width=90%}
+
+\pagebreak
 
 #### Esempio 2
 Se si deve verificare un elemento con indice maggiore di $15$, ad esempio $20$, la sua merkle proof sarà: $$[element, 20, H_{0,21}, H_{1,11}, H_{2,3}, H_{3,2}, H_{4,0} ]$$
-![Merkle Proof dell'indice 20 - In verde gli hash forniti dalla proof, in viola quelli calcolati](./immagini/MerkleProof20.png)
+
+![Merkle Proof dell'indice 20 - In verde gli hash forniti dalla proof, in viola quelli calcolati](./immagini/MerkleProof20.png){width=90%}
 
 
 
@@ -491,7 +541,7 @@ Se si deve verificare un elemento con indice maggiore di $15$, ad esempio $20$, 
 |    `checkAccuse`   |  $1300+(2500\times n)$ |                  Dove $n$ è il numero di joiners           |
 |   `extractNumber`  | $70705 \times m$ | $m$ è il numero di tentativi (massimo 75, quindi 5302875 Gas)    |
 |    `getInfoGame`   |       36536      |                                                                  |
-|    `submitBoard`   |       40181      |                                                                  |
+|    `submitCard`   |       40181      |                                                                  |
 
 ## Valutazione di esempio con un gioco con un creatore e 3 giocatori
 
@@ -549,10 +599,10 @@ Per calcolare quanto spende un joiner e quanto spende il creatore del gioco in b
 ||||
 |    **Totale**   |       605.601     |   |
 
-#### Conclusioni
+#### Valutazione spese creatore
 Come possiamo vedere il creatore deve sostenere un costo importante dovuto all'estrazione dei numeri, pertanto abbiamo deciso di tenere traccia del gas utilizzato per questa specifica operazione così da poter rimborsare il creatore a fine partita.
 Di seguito uno snippet di codice estratto dalla funzione del contratto
-`submitBoard`:
+`submitCard`:
 \pagebreak
 
 ```java
@@ -561,11 +611,13 @@ if (msg.sender != gameList[_gameId].creator) {
     uint gameWeiAmount = gameList[_gameId].ethBalance * 1 ether;
     uint prize = gameWeiAmount - gameList[_gameId].weiUsed;
 
-    emit GameEnded(_gameId, msg.sender, prize, gameList[_gameId].weiUsed, false, WinningReasons.BINGO);
+    emit GameEnded(_gameId, msg.sender, prize, gameList[_gameId].weiUsed,
+                                                    false, WinningReasons.BINGO);
     payable(msg.sender).transfer(prize);
     payable(gameList[_gameId].creator).transfer(gameList[_gameId].weiUsed);
 } else {
-    emit GameEnded(_gameId, msg.sender, gameList[_gameId].ethBalance * 1 ether, 0, true, WinningReasons.BINGO);
+    emit GameEnded(_gameId, msg.sender, gameList[_gameId].ethBalance * 1 ether, 0,
+                                                            true, WinningReasons.BINGO);
     payable(msg.sender).transfer(gameList[_gameId].ethBalance * 1 ether);
 }
 ...
