@@ -120,7 +120,7 @@ Per creare la stanza (Figura 2) è necessario inserire il numero massimo di gioc
 ![Creazione della stanza di gioco](./immagini/creazionegame.png){ width=50% }
 
 
-Solo dopo aver premuto il pulsante scommetti verrà mostrata la schermata di attesa (Figura 3), in cui si aspetterà di raggiungere il numero totale di giocatori scelto al momento della creazione della stanza.
+Solo dopo aver premuto il pulsante `Scommetti` verrà mostrata la schermata di attesa (Figura 3), in cui si aspetterà di raggiungere il numero totale di giocatori scelto al momento della creazione della stanza.
 
 ![Attesa dell'unione di altri player](./immagini/attesaCreator.png){ width=50% }
 
@@ -133,15 +133,15 @@ Solo dopo aver premuto il pulsante scommetti verrà mostrata la schermata di att
 Per accedere a una stanza abbiamo due opzioni:
 
 - scegliere una stanza random
-- scegliere una stanza specifica, sapendo l'ID della stanza
+- scegliere una stanza specifica, conoscendo l'ID della stanza
 
 
-Cliccando il pulsante `Entra in una stanza` si aprirà una schermata (Figura 4) in cui verrà richiesto inserire un ID per selezionare il gioco a vogliamo partecipare.
+Cliccando il pulsante `Entra in una stanza` si aprirà una schermata (Figura 4) in cui verrà richiesto di inserire un ID per selezionare il gioco a vogliamo partecipare.
 
 ![Scelta della stanza di gioco](./immagini/selezionacamera.png){ width=50% }
 
 
-Se l'ID selezionato esiste e ci sono ancora posti disponibili allora apparirà la schermata contenente:
+Se l'ID selezionato esiste e ci sono ancora posti disponibili allora apparirà la schermata contenente (Figura 6):
 
 - ID della stanza scelta
 - Gli Ethereum da scommettere per potersi unire alla stanza
@@ -152,16 +152,16 @@ Se l'ID selezionato esiste e ci sono ancora posti disponibili allora apparirà l
 
 A questo punto, se cliccando sul pulsante `Entra nella stanza`, la somma di Ethereum scommessi verrà prelevata dal wallet e il numero dei giocatori presenti nella stanza verrà aggiornato attraverso la chiamata di funzione del contratto `JoinGame` di cui parleremo nel prossimo capitolo.
 
-Cliccando invece sul pulsante `Entra in una stanza random`, non verrà richiesto nessun ID e verranno visualizzate direttamente le informazioni sul gioco scelto casualmente dal contratto (Figura 5).
+Cliccando invece sul pulsante `Entra in una stanza random`, non verrà richiesto nessun ID e verranno visualizzate direttamente le informazioni sul gioco scelto casualmente dal contratto.
 
 ### Fase di gioco
 
-Una volta che tutti i giocatori sono entrati la partita verrà avviata e verrà caricata la cartella creata dal client al momento dell'ingresso nella stanza (parleremo meglio di questo argomento nel capitolo sulla sicurezza).
+Una volta che tutti i giocatori sono entrati, la partita verrà avviata e verrà caricata la cartella creata dal client al momento dell'ingresso nella stanza (parleremo meglio di questo argomento nel capitolo sulla sicurezza).
 
 #### Lato Creatore della stanza
 
 
-Per rendere il gioco più interattivo, è il creatore della stanza che si fa carico della responsabilità estrarre i numeri, chiamando la funzione del contratto `extractNumber`, pertanto è sempre il creatore che detta il ritmo del gioco. Vediamo la schermata di gioco (Figura 6):
+Per rendere il gioco più interattivo, è il creatore della stanza che si fa carico della responsabilità estrarre i numeri, chiamando la funzione del contratto `extractNumber`, pertanto è sempre il creatore che detta il ritmo del gioco. Vediamo la schermata di gioco (Figura 7):
 
 ![Schermata di gioco del creatore](./immagini/TabellaCreator.png){ width=50% }
 
@@ -474,7 +474,7 @@ Se si deve verificare un elemento con indice minore o uguale a $15$, ad esempio 
 ![Merkle Proof dell'indice 7 - In verde gli hash forniti dalla proof, in viola quelli calcolati](./immagini/MerkleProof7.png)
 
 #### Esempio 2
-Se si deve verificare un elemento con indice maggiore di$15$, ad esempio $20$, la sua merkle proof sarà: $$[element, 20, H_{0,21}, H_{1,11}, H_{2,3}, H_{3,2}, H_{4,0} ]$$
+Se si deve verificare un elemento con indice maggiore di $15$, ad esempio $20$, la sua merkle proof sarà: $$[element, 20, H_{0,21}, H_{1,11}, H_{2,3}, H_{3,2}, H_{4,0} ]$$
 ![Merkle Proof dell'indice 20 - In verde gli hash forniti dalla proof, in viola quelli calcolati](./immagini/MerkleProof20.png)
 
 
@@ -551,7 +551,9 @@ Per calcolare quanto spende un joiner e quanto spende il creatore del gioco in b
 
 #### Conclusioni
 Come possiamo vedere il creatore deve sostenere un costo importante dovuto all'estrazione dei numeri, pertanto abbiamo deciso di tenere traccia del gas utilizzato per questa specifica operazione così da poter rimborsare il creatore a fine partita.
-Di seguito uno snippet di codice estratto dalla funzione del contratto `submitBoard`:
+Di seguito uno snippet di codice estratto dalla funzione del contratto
+`submitBoard`:
+\pagebreak
 
 ```java
 ...
